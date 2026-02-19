@@ -1,0 +1,22 @@
+# python
+venv/
+__pycache__/
+*.pyc
+.env
+
+# database
+*.sqlite3
+
+# system
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+
+# IDE
+.vscode/
+.antigravity/
+
+# storage (uploaded documents)
+backend/storage/
