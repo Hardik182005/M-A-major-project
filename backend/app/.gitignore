@@ -9,7 +9,7 @@ __pycache__/
 
 # system
 .DS_Store
-Thumbs.db4
+Thumbs.db
 
 # logs
 *.log
@@ -18,5 +18,6 @@ Thumbs.db4
 .vscode/
 .antigravity/
 
-# storage (uploaded documents)
-backend/storage/
+# storage (uploaded documents) — keep the folder via .gitkeep
+storage/*
+!storage/.gitkeep
