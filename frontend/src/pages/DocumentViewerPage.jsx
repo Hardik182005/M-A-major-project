@@ -8,6 +8,7 @@ export default function DocumentViewerPage() {
     const navigate = useNavigate();
     const [document, setDocument] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('AI Findings');
 
     useEffect(() => {
         // Here we would ideally fetch the specific document by ID. 
@@ -110,6 +111,102 @@ export default function DocumentViewerPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Right Side: Insights Sidebar */}
+                <aside className="insights-sidebar">
+                    <div className="insights-header">
+                        <h2>Insights</h2>
+                        <div className="insights-tabs-pills">
+                            <button className={`pill-tab ${activeTab === 'Metadata' ? 'active' : ''}`} onClick={() => setActiveTab('Metadata')}>
+                                Metadata
+                            </button>
+                            <button className={`pill-tab ${activeTab === 'Extracted Data' ? 'active' : ''}`} onClick={() => setActiveTab('Extracted Data')}>
+                                Extracted Data
+                            </button>
+                            <button className={`pill-tab ${activeTab === 'PII Detected' ? 'active' : ''}`} onClick={() => setActiveTab('PII Detected')}>
+                                PII Detected <span className="dot orange-dot"></span>
+                            </button>
+                            <button className={`pill-tab ${activeTab === 'AI Findings' ? 'active' : ''}`} onClick={() => setActiveTab('AI Findings')}>
+                                AI Findings <span className="dot red-dot"></span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="insights-scroll-area">
+                        {activeTab === 'AI Findings' ? (
+                            <div className="ai-findings-content fade-in">
+
+                                <div className="findings-group-title">Critical Risk Anomalies</div>
+                                <div className="insight-card ai-risk-card-critical">
+                                    <h3 className="risk-card-title critical-title">
+                                        <span className="dot red-dot"></span> Amount Discrepancy
+                                    </h3>
+                                    <p className="risk-card-desc">
+                                        Section 3.2: Expected $21,000 based on v2, found $24,500. This exceeds authorized limits.
+                                    </p>
+                                </div>
+
+                                <div className="findings-group-title" style={{ marginTop: '24px' }}>Other Findings</div>
+                                <div className="insight-card ai-risk-card-other">
+                                    <div className="other-finding-item">
+                                        <h4 className="other-finding-title">
+                                            <span className="dot orange-dot"></span> PII Exposure
+                                        </h4>
+                                        <p className="risk-card-desc">
+                                            Section 3.4: Plaintext SSN format detected. Recommend immediate redaction.
+                                        </p>
+                                    </div>
+                                    <div className="other-finding-item" style={{ margin: '16px 0' }}>
+                                        <h4 className="other-finding-title">
+                                            <span className="dot yellow-dot"></span> Missing Clause
+                                        </h4>
+                                        <p className="risk-card-desc">
+                                            Section 4.0: Standard 'Termination for Convenience' clause is missing.
+                                        </p>
+                                    </div>
+                                    <div className="other-finding-item">
+                                        <h4 className="other-finding-title">
+                                            <span className="dot grey-dot"></span> Standard Clause
+                                        </h4>
+                                        <p className="risk-card-desc">
+                                            Section 3.1: Language matches corporate baseline for services.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="insight-card risk-dist-card">
+                                    <h3 className="risk-dist-title">RISK DISTRIBUTION</h3>
+                                    <div className="risk-dist-bar">
+                                        <div className="rd-segment bg-critical" style={{ width: '25%' }}></div>
+                                        <div className="rd-segment bg-high" style={{ width: '25%' }}></div>
+                                        <div className="rd-segment bg-medium" style={{ width: '25%' }}></div>
+                                        <div className="rd-segment bg-low" style={{ width: '25%' }}></div>
+                                    </div>
+                                    <div className="risk-dist-legend">
+                                        <div className="rdl-item"><span className="dot bg-critical"></span> 1 CRITICAL</div>
+                                        <div className="rdl-item"><span className="dot bg-high"></span> 1 HIGH</div>
+                                        <div className="rdl-item"><span className="dot bg-medium"></span> 1 MEDIUM</div>
+                                        <div className="rdl-item"><span className="dot bg-low"></span> 1 LOW</div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        ) : (
+                            <div className="tab-placeholder fade-in">
+                                <span className="material-symbols-outlined" style={{ fontSize: '48px', color: '#3F3F46', marginBottom: '16px' }}>construction</span>
+                                <h3>Module Under Construction</h3>
+                                <p>This specific insights lens is currently being updated by the processing pipeline.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="insights-footer">
+                        <button className="generate-report-btn">
+                            <span className="material-symbols-outlined">security</span>
+                            Download Risk Assessment
+                        </button>
+                    </div>
+                </aside>
             </div>
         </div>
     );
