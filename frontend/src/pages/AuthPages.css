@@ -1,0 +1,312 @@
+/* ── Auth Page Layout ───────────────── */
+.auth-page {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    min-height: 100vh;
+}
+
+/* ── Left Panel (dark brand) ────────── */
+.auth-left {
+    background: var(--obsidian);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-left::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 20% 80%, rgba(255, 255, 255, 0.02) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(255, 255, 255, 0.015) 0%, transparent 50%);
+}
+
+.auth-left-content {
+    position: relative;
+    z-index: 1;
+    max-width: 420px;
+}
+
+.auth-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--white);
+    margin-bottom: 48px;
+    text-decoration: none;
+}
+
+.auth-logo-text {
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+}
+
+.auth-logo-ai {
+    font-weight: 400;
+    color: #8b8fa3;
+}
+
+.auth-left-heading {
+    font-size: 36px;
+    color: var(--white);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+}
+
+.auth-left-sub {
+    font-size: 16px;
+    color: var(--gray-400);
+    line-height: 1.7;
+    margin-bottom: 40px;
+}
+
+.auth-left-features {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.auth-feature {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.auth-feature .material-symbols-outlined {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* ── Right Panel (form) ─────────────── */
+.auth-right {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    background: var(--white);
+}
+
+.auth-form-wrap {
+    width: 100%;
+    max-width: 400px;
+}
+
+.auth-form-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+}
+
+.auth-form-subtitle {
+    font-size: 15px;
+    color: var(--gray-500);
+    margin-bottom: 28px;
+}
+
+/* ── Error message ──────────────────── */
+.auth-error {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    color: var(--gray-700);
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    margin-bottom: 20px;
+}
+
+/* ── Form ────────────────────────────── */
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--gray-600);
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--black);
+    cursor: pointer;
+}
+
+.forgot-link {
+    font-size: 13px;
+    color: var(--gray-500);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.forgot-link:hover {
+    color: var(--black);
+}
+
+/* ── Password toggle ────────────────── */
+.input-password-wrap {
+    position: relative;
+}
+
+.input-password-wrap .input {
+    padding-right: 44px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--gray-400);
+    display: flex;
+    cursor: pointer;
+}
+
+.password-toggle:hover {
+    color: var(--gray-700);
+}
+
+.password-toggle .material-symbols-outlined {
+    font-size: 20px;
+}
+
+/* ── Strength bar ───────────────────── */
+.strength-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.strength-wrap .strength-bar {
+    flex: 1;
+    max-width: 120px;
+}
+
+.strength-label {
+    font-size: 11px;
+    text-transform: capitalize;
+    color: var(--gray-500);
+}
+
+/* ── Google Button ──────────────────── */
+.google-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.google-btn:hover {
+    background: var(--gray-50);
+    border-color: var(--gray-300);
+}
+
+/* ── Divider ────────────────────────── */
+.auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 24px 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--gray-200);
+}
+
+.auth-divider span {
+    font-size: 12px;
+    color: var(--gray-400);
+    white-space: nowrap;
+}
+
+/* ── Switch link ────────────────────── */
+.auth-switch {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 14px;
+    color: var(--gray-500);
+}
+
+.auth-switch a {
+    color: var(--black);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-switch a:hover {
+    text-decoration: underline;
+}
+
+/* ── Forgot Password Success ────────── */
+.reset-success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.reset-success-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--gray-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+/* ── Responsive ─────────────────────── */
+@media (max-width: 900px) {
+    .auth-page {
+        grid-template-columns: 1fr;
+    }
+
+    .auth-left {
+        display: none;
+    }
+
+    .auth-right {
+        padding: 40px 24px;
+    }
+}

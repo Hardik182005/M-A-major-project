@@ -16,3 +16,7 @@ class User(Base):
     # account lockout
     failed_login_attempts = Column(Integer, default=0, server_default="0")
     locked_until = Column(DateTime, nullable=True)
+
+    # password reset
+    reset_token = Column(String, nullable=True, index=True)
+    reset_token_expiry = Column(DateTime, nullable=True)

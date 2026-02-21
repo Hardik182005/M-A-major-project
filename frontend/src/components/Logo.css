@@ -1,0 +1,28 @@
+.brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.brand-name {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--black);
+}
+
+.brand-ai {
+    font-weight: 400;
+    color: #8b8fa3;
+}
+
+/* White variant for dark backgrounds */
+.brand-logo-light .brand-name {
+    color: var(--white);
+}
+
+.brand-logo-light .brand-ai {
+    color: #8b8fa3;
+}
