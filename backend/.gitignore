@@ -44,3 +44,6 @@ venv.bak/
 .env.development
 .env.production
 .env.test
+
+# storage
+storage/

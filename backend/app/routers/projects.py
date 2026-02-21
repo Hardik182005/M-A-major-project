@@ -266,3 +266,63 @@ def remove_member(
               removed_user_id=user_id)
     db.commit()
     return {"msg": "Member removed", "user_id": user_id}
+
+# ── Dashboard & Metrics ──────────────────────────────────
+
+@router.get("/{project_id}/analysis/summary")
+def get_project_analysis_summary(
+    project_id: int,
+    member: ProjectMember = Depends(require_min_role("VIEWER")),
+    db: Session = Depends(get_db),
+):
+    """Return a mock AI Verdict for the dashboard."""
+    return {
+        "risk_score": 67,
+        "verdict": "PROCEED_WITH_CAUTION",
+        "confidence": 0.82,
+        "highlights": [
+            {"label": "Inconsistent IP Clauses", "type": "LEGAL"},
+            {"label": "Pending Litigation", "type": "LEGAL"},
+            {"label": "Unusual Burn Rate", "type": "FINANCIAL"}
+        ],
+        "explanation": "Our AI engine has flagged several medium-to-high risk anomalies that require legal oversight before finalization."
+    }
+
+@router.get("/{project_id}/metrics")
+def get_project_metrics(
+    project_id: int,
+    member: ProjectMember = Depends(require_min_role("VIEWER")),
+    db: Session = Depends(get_db),
+):
+    """Return mock metrics for the 4 KPI tiles."""
+    return {
+        "total_docs": 142,
+        "docs_uploaded_today": 12,
+        "processed_docs": 128,
+        "flagged_risks": 23,
+        "risk_level": "HIGH",
+        "reports_generated": 3,
+        "latest_report_status": "FINAL_DRAFT"
+    }
+
+@router.get("/{project_id}/processing/status")
+def get_project_processing_status(
+    project_id: int,
+    member: ProjectMember = Depends(require_min_role("VIEWER")),
+    db: Session = Depends(get_db),
+):
+    """Return mock processing pipeline status."""
+    return {
+        "stages": {
+            "TEXT_EXTRACTION": 1.0,
+            "PII_SCANNING": 0.85,
+            "STRUCTURING": 0.60,
+            "AI_ANALYSIS": 0.30
+        },
+        "current": {
+            "stage": "AI_ANALYSIS",
+            "doc_id": "doc-xyz",
+            "filename": "14.pdf",
+            "message": "Extracting risk factors from 14.pdf"
+        }
+    }
