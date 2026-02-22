@@ -18,3 +18,4 @@ class Project(Base):
     members = relationship("ProjectMember", back_populates="project", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="project", cascade="all, delete-orphan")
     audit_events = relationship("AuditEvent", back_populates="project", cascade="all, delete-orphan")
+    findings = relationship("Finding", back_populates="project", cascade="all, delete-orphan")

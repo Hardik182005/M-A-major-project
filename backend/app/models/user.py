@@ -20,3 +20,10 @@ class User(Base):
     # password reset
     reset_token = Column(String, nullable=True, index=True)
     reset_token_expiry = Column(DateTime, nullable=True)
+
+    @property
+    def is_locked(self):
+        """Check if the account is currently locked."""
+        if not self.locked_until:
+            return False
+        return datetime.utcnow() < self.locked_until

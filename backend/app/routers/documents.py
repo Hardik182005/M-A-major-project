@@ -4,7 +4,7 @@ import shutil
 import uuid
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Request, Query
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Request, Query, BackgroundTasks
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -17,7 +17,9 @@ from app.models.user import User
 from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.models.document import Document
+from app.models.processing import ProcessingJob
 from app.services.audit import log_audit
+from app.workers.pipeline import pipeline_worker
 
 router = APIRouter(tags=["Documents"])
 
@@ -120,7 +122,9 @@ def complete_upload(
     project_id: int,
     doc_id: int,
     request: Request,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    auto_process: bool = Query(True, description="Auto-process document with AI pipeline"),
     member: ProjectMember = Depends(require_min_role("ANALYST")),
     db: Session = Depends(get_db),
 ):
@@ -175,7 +179,7 @@ def complete_upload(
         Document.doc_key == doc.doc_key,
         Document.is_latest == True,  # noqa: E712
     ).update({"is_latest": False})
-
+    
     # finalize
     doc.checksum = checksum
     doc.file_size = file_size
@@ -191,6 +195,23 @@ def complete_upload(
     db.commit()
     db.refresh(doc)
 
+    # Auto-create processing job if enabled
+    job = None
+    if auto_process and settings.ENABLE_AUTO_PROCESSING:
+        job = ProcessingJob(
+            project_id=project_id,
+            doc_id=doc.id,
+            stage="QUEUED",
+            progress=0,
+            status="QUEUED",
+        )
+        db.add(job)
+        db.commit()
+        db.refresh(job)
+        
+        # Run in background
+        background_tasks.add_task(pipeline_worker.process_document, job.id)
+
     return {
         "msg": "Upload complete",
         "document_id": doc.id,
@@ -200,6 +221,8 @@ def complete_upload(
         "file_size": doc.file_size,
         "checksum": doc.checksum,
         "status": doc.status,
+        "auto_processing": auto_process and settings.ENABLE_AUTO_PROCESSING,
+        "job_id": job.id if job else None,
     }
 
 
@@ -209,7 +232,9 @@ def complete_upload(
 def upload_document(
     project_id: int,
     request: Request,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    auto_process: bool = Query(True, description="Auto-process document with AI pipeline"),
     member: ProjectMember = Depends(require_min_role("ANALYST")),
     db: Session = Depends(get_db),
 ):
@@ -301,6 +326,23 @@ def upload_document(
     db.commit()
     db.refresh(doc)
 
+    # Auto-create processing job if enabled
+    job = None
+    if auto_process and settings.ENABLE_AUTO_PROCESSING:
+        job = ProcessingJob(
+            project_id=project_id,
+            doc_id=doc.id,
+            stage="QUEUED",
+            progress=0,
+            status="QUEUED",
+        )
+        db.add(job)
+        db.commit()
+        db.refresh(job)
+        
+        # Run in background
+        background_tasks.add_task(pipeline_worker.process_document, job.id)
+
     return {
         "msg": "Document uploaded",
         "document_id": doc.id,
@@ -310,6 +352,8 @@ def upload_document(
         "file_size": doc.file_size,
         "checksum": doc.checksum,
         "status": doc.status,
+        "auto_processing": auto_process and settings.ENABLE_AUTO_PROCESSING,
+        "job_id": job.id if job else None,
     }
 
 

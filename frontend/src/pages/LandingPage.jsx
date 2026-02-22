@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { BrandLogo, LogoIcon } from '../components/Logo';
 import './LandingPage.css';
@@ -11,6 +11,13 @@ export default function LandingPage() {
     const [isFlipping, setIsFlipping] = useState(false);
     const capRef = useRef(null);
     const [capVisible, setCapVisible] = useState(false);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (localStorage.getItem('access_token')) {
+            navigate('/dashboard');
+        }
+    }, [navigate]);
 
     useEffect(() => {
         const handleScroll = () => setScrollY(window.scrollY);
@@ -47,7 +54,7 @@ export default function LandingPage() {
             <nav className={`landing-nav ${scrollY > 50 ? 'nav-scrolled' : ''}`}>
                 <div className="nav-inner">
                     <Link to="/" className="nav-brand-link">
-                        <BrandLogo size={26} variant="dark" />
+                        <BrandLogo size={36} variant="dark" />
                     </Link>
                     <div className="nav-links">
                         <a href="#platform">Platform</a>
@@ -72,9 +79,8 @@ export default function LandingPage() {
                         <h1 className="hero-title font-display animate-hero-title">
                             <span className="hero-line hero-line-1">
                                 <span className={`rotating-word ${isFlipping ? 'flip-out' : 'flip-in'}`}>
-                                    {ROTATING_WORDS[wordIndex]}
+                                    {ROTATING_WORDS[wordIndex]},
                                 </span>
-                                ,
                             </span>
                             <span className="hero-line hero-line-2 hero-title-accent">Reimagined.</span>
                         </h1>
@@ -253,7 +259,7 @@ export default function LandingPage() {
             <footer className="landing-footer">
                 <div className="footer-inner">
                     <div className="footer-brand">
-                        <LogoIcon size={18} color="black" />
+                        <LogoIcon size={24} color="black" />
                         <p>© 2026 MergerMindAI. Precision Standard.</p>
                     </div>
                     <div className="footer-links">

@@ -190,16 +190,46 @@ export default function DocumentsPage() {
 
     const totalPages = Math.ceil(total / filters.pageSize);
 
+    const [generatingReport, setGeneratingReport] = useState(false);
+
+    const handleGenerateReport = async () => {
+        if (!selectedProject) return;
+        setGeneratingReport(true);
+        try {
+            await api.post(`/reports/project/${selectedProject.id}/generate`);
+            alert("Report generated successfully!");
+            navigate('/reports');
+        } catch (err) {
+            console.error(err);
+            alert("Failed to generate report");
+        } finally {
+            setGeneratingReport(false);
+        }
+    };
+
     return (
         <AppLayout selectedProject={selectedProject} onSelectProject={setSelectedProject}>
             <div className="fade-in">
                 <div className="docs-header">
                     <h1>Documents</h1>
-                    <label className="upload-btn">
-                        <span className="material-symbols-outlined">upload_file</span>
-                        Upload Documents
-                        <input type="file" style={{ display: 'none' }} onChange={handleFileUpload} />
-                    </label>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        <button
+                            className="analysis-btn-primary"
+                            style={{ background: '#1D4ED8', color: 'white', padding: '10px 16px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', border: 'none', fontWeight: 500 }}
+                            onClick={handleGenerateReport}
+                            disabled={generatingReport || documents.length === 0}
+                        >
+                            <span className="material-symbols-outlined" style={{ animation: generatingReport ? 'spin 1s linear infinite' : 'none' }}>
+                                {generatingReport ? 'sync' : 'security'}
+                            </span>
+                            {generatingReport ? 'Generating...' : 'Generate AI Report'}
+                        </button>
+                        <label className="upload-btn">
+                            <span className="material-symbols-outlined">upload_file</span>
+                            Upload file
+                            <input type="file" style={{ display: 'none' }} onChange={handleFileUpload} />
+                        </label>
+                    </div>
                 </div>
 
                 <div className="filters-row">

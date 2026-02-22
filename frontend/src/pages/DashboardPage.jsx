@@ -12,21 +12,17 @@ export default function DashboardPage() {
     const [pipeline, setPipeline] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Mock Audit Trail Activity since we aren't fetching the real audit endpoint yet
-    const recentActivity = [
-        { id: 1, action: "Upload", icon: "description", text: "12 new legal contracts uploaded", user: "Sarah Chen", time: "14 minutes ago", verb: "Uploaded by" },
-        { id: 2, action: "Analysis", icon: "auto_awesome", text: "AI completed analysis on Employment Agreements", user: "4 critical risks identified", time: "1 hour ago", verb: "" },
-        { id: 3, action: "Member", icon: "person_add", text: "Marcus Wright joined the acquisition team", user: "Role: Financial Auditor", time: "3 hours ago", verb: "" },
-        { id: 4, action: "Security", icon: "warning", text: "Security Alert: External login attempt blocked", user: "Audit log updated", time: "5 hours ago", verb: "" }
-    ];
-
+    // Fetch real data when project is selected
     useEffect(() => {
-        if (!selectedProject) return;
+        if (!selectedProject) {
+            setLoading(false);
+            return;
+        }
 
         const fetchData = async () => {
             setLoading(true);
             try {
-                const [sumRes, metRes, pipRes] = await Promise.all([
+                const [sumRes, metRes, pipeRes] = await Promise.all([
                     api.get(`/projects/${selectedProject.id}/analysis/summary`).catch(() => ({ data: null })),
                     api.get(`/projects/${selectedProject.id}/metrics`).catch(() => ({ data: null })),
                     api.get(`/projects/${selectedProject.id}/processing/status`).catch(() => ({ data: null })),
@@ -34,16 +30,21 @@ export default function DashboardPage() {
 
                 if (sumRes.data) setSummary(sumRes.data);
                 if (metRes.data) setMetrics(metRes.data);
-                if (pipRes.data) setPipeline(pipRes.data);
+                if (pipeRes.data) setPipeline(pipeRes.data);
             } catch (err) {
-                console.error("Failed to load dashboard data");
+                console.error("Failed to load dashboard data:", err);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchData();
-        // Setup polling for pipeline
+    }, [selectedProject]);
+
+    // Setup polling for pipeline status
+    useEffect(() => {
+        if (!selectedProject) return;
+
         const interval = setInterval(() => {
             api.get(`/projects/${selectedProject.id}/processing/status`)
                 .then(res => setPipeline(res.data))
@@ -54,18 +55,34 @@ export default function DashboardPage() {
     }, [selectedProject]);
 
     const getVerdictColor = (score) => {
-        if (score >= 80) return '#DC2626'; // Red (High Risk)
-        if (score >= 40) return '#D97706'; // Orange (Proceed With Caution)
-        return '#10B981'; // Green (Safe)
+        if (!score) return '#10B981';
+        if (score >= 80) return '#DC2626';
+        if (score >= 60) return '#D97706';
+        if (score >= 40) return '#F0AD40';
+        return '#10B981';
     };
 
     const formatPercent = (val) => `${Math.round(val * 100)}%`;
 
+    // Show project selection prompt if no project selected
+    if (!selectedProject) {
+        return (
+            <AppLayout selectedProject={null} onSelectProject={setSelectedProject}>
+                <div className="no-project-selected">
+                    <span className="material-symbols-outlined">dashboard</span>
+                    <h2>Select a Project</h2>
+                    <p>Choose a project from the sidebar to view the AI Dashboard</p>
+                </div>
+            </AppLayout>
+        );
+    }
+
     return (
         <AppLayout selectedProject={selectedProject} onSelectProject={setSelectedProject}>
-            {loading || !metrics ? (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#A1A1AA' }}>
-                    Loading AI Dashboard...
+            {loading ? (
+                <div className="loading-container">
+                    <span className="material-symbols-outlined spinning">progress_activity</span>
+                    <p>Loading AI Dashboard...</p>
                 </div>
             ) : (
                 <div className="dashboard-grid fade-in">
@@ -82,7 +99,9 @@ export default function DashboardPage() {
                                     {summary?.verdict ? summary.verdict.replace(/_/g, ' ') : 'PENDING'}
                                 </span>
                             </div>
-                            <p className="verdict-desc">{summary?.explanation || 'AI analysis pending on uploaded documents.'}</p>
+                            <p className="verdict-desc">
+                                {summary?.explanation || 'AI analysis pending on uploaded documents.'}
+                            </p>
                             <div className="highlights-row">
                                 {summary?.highlights?.map((h, i) => (
                                     <div className="highlight-item" key={i}>
@@ -94,121 +113,145 @@ export default function DashboardPage() {
                                 ))}
                             </div>
                         </div>
-                        <div className="verdict-cta">
-                            <button className="verdict-action" onClick={() => navigate('/findings')}>
-                                View Detailed Analysis
-                            </button>
-                        </div>
                     </div>
 
-                    {/* KPI Tiles */}
+                    {/* Metrics Grid */}
                     <div className="kpi-row">
                         <div className="card kpi-card">
                             <div className="kpi-header">
                                 <span className="material-symbols-outlined">folder</span>
-                                <span className="kpi-badge" style={{ color: '#71717A' }}>+{metrics.docs_uploaded_today} today</span>
+                                <span className="kpi-badge">+{metrics?.today_docs || 0} today</span>
                             </div>
                             <div className="kpi-title">Total Documents</div>
-                            <div className="kpi-value">{metrics.total_docs}</div>
+                            <div className="kpi-value">{metrics?.total_docs || 0}</div>
                         </div>
-
                         <div className="card kpi-card">
                             <div className="kpi-header">
-                                <span className="material-symbols-outlined" style={{ color: '#2563EB' }}>data_usage</span>
-                                <span className="kpi-badge" style={{ color: '#2563EB' }}>{(metrics.processed_docs / metrics.total_docs * 100).toFixed(1)}%</span>
+                                <span className="material-symbols-outlined">data_usage</span>
+                                <span className="kpi-badge" style={{ color: '#2563EB' }}>{metrics?.total_docs ? formatPercent((metrics?.processed_docs || 0) / metrics.total_docs) : '0%'}</span>
                             </div>
                             <div className="kpi-title">Processed</div>
-                            <div className="kpi-value">{metrics.processed_docs}<small>/{metrics.total_docs}</small></div>
+                            <div className="kpi-value">{metrics?.processed_docs || 0}<small>/{metrics?.total_docs || 0}</small></div>
                         </div>
-
                         <div className="card kpi-card">
                             <div className="kpi-header">
                                 <span className="material-symbols-outlined" style={{ color: '#DC2626' }}>error</span>
-                                <span className="kpi-badge" style={{ color: '#DC2626' }}>{metrics.risk_level} Risk</span>
+                                <span className="kpi-badge" style={{ color: '#DC2626' }}>High Risk</span>
                             </div>
                             <div className="kpi-title">Flagged Risks</div>
-                            <div className="kpi-value">{metrics.flagged_risks}</div>
+                            <div className="kpi-value">{metrics?.flagged_risks || 0}</div>
                         </div>
-
                         <div className="card kpi-card">
                             <div className="kpi-header">
-                                <span className="material-symbols-outlined" style={{ color: '#71717A' }}>description</span>
-                                <span className="kpi-badge" style={{ color: '#71717A' }}>{metrics.latest_report_status.replace(/_/g, ' ')}</span>
+                                <span className="material-symbols-outlined" style={{ color: '#A1A1AA' }}>description</span>
+                                <span className="kpi-badge" style={{ color: '#A1A1AA' }}>Final Draft</span>
                             </div>
                             <div className="kpi-title">Reports Generated</div>
-                            <div className="kpi-value">{metrics.reports_generated}</div>
+                            <div className="kpi-value">{metrics?.reports_generated || 0}</div>
+                        </div>
+                    </div>
+
+                    {/* Processing Pipeline Status */}
+                    <div className="card pipeline-card">
+                        <div className="section-header">
+                            <h3>Processing Pipeline</h3>
+                        </div>
+                        <div className="pipeline-list">
+                            <div className="pipeline-item">
+                                <div className="pipeline-info">
+                                    <span>TEXT EXTRACTION</span>
+                                    <span>{formatPercent(pipeline?.stages?.TEXT_EXTRACTION || 0)}</span>
+                                </div>
+                                <div className="pipeline-bar-bg">
+                                    <div className="pipeline-bar-fill complete" style={{ width: formatPercent(pipeline?.stages?.TEXT_EXTRACTION || 0) }}></div>
+                                </div>
+                            </div>
+                            <div className="pipeline-item">
+                                <div className="pipeline-info">
+                                    <span>PII SCANNING</span>
+                                    <span>{formatPercent(pipeline?.stages?.PII_SCANNING || 0)}</span>
+                                </div>
+                                <div className="pipeline-bar-bg">
+                                    <div className="pipeline-bar-fill" style={{ width: formatPercent(pipeline?.stages?.PII_SCANNING || 0) }}></div>
+                                </div>
+                            </div>
+                            <div className="pipeline-item">
+                                <div className="pipeline-info">
+                                    <span>STRUCTURING</span>
+                                    <span>{formatPercent(pipeline?.stages?.STRUCTURING || 0)}</span>
+                                </div>
+                                <div className="pipeline-bar-bg">
+                                    <div className="pipeline-bar-fill" style={{ width: formatPercent(pipeline?.stages?.STRUCTURING || 0) }}></div>
+                                </div>
+                            </div>
+                            <div className="pipeline-item">
+                                <div className="pipeline-info">
+                                    <span>AI ANALYSIS</span>
+                                    <span>{formatPercent(pipeline?.stages?.AI_ANALYSIS || 0)}</span>
+                                </div>
+                                <div className="pipeline-bar-bg">
+                                    <div className="pipeline-bar-fill" style={{ width: formatPercent(pipeline?.stages?.AI_ANALYSIS || 0), background: '#818CF8' }}></div>
+                                </div>
+                            </div>
+                            {pipeline?.current && (
+                                <div className="pipeline-status">
+                                    CURRENT STEP: {pipeline.current.message}
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     {/* Recent Activity */}
-                    <div className="card">
+                    <div className="card activity-card">
                         <div className="section-header">
                             <h3>Recent Activity</h3>
                             <Link to="/audit" className="section-link">See all activity</Link>
                         </div>
                         <div className="activity-list">
-                            {recentActivity.map(item => (
-                                <div className="activity-item" key={item.id}>
+                            {summary?.findings?.length > 0 ? summary.findings.slice(0, 4).map((finding, i) => (
+                                <div className="activity-item" key={i}>
                                     <div className="activity-icon">
-                                        <span className="material-symbols-outlined">{item.icon}</span>
+                                        <span className="material-symbols-outlined">warning</span>
                                     </div>
                                     <div className="activity-content">
-                                        <div className="activity-title">{item.text}</div>
-                                        <div className="activity-meta">
-                                            {item.verb && `${item.verb} `}<span style={{ color: '#3B82F6', fontWeight: 500 }}>{item.user}</span> • {item.time}
-                                        </div>
+                                        <div className="activity-title">{finding.description}</div>
+                                        <div className="activity-meta">{finding.category} Risk identified</div>
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="empty-state">
+                                    <span className="material-symbols-outlined">history</span>
+                                    <p>No recent activity</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* Processing Pipeline */}
-                    <div className="card">
-                        <div className="section-header">
-                            <h3>Processing Pipeline</h3>
+                    {/* Quick Actions */}
+                    <div className="card actions-card">
+                        <h3>
+                            <span className="material-symbols-outlined">bolt</span>
+                            Quick Actions
+                        </h3>
+                        <div className="actions-grid">
+                            <button className="action-btn" onClick={() => navigate('/documents')}>
+                                <span className="material-symbols-outlined">upload_file</span>
+                                Upload Documents
+                            </button>
+                            <button className="action-btn" onClick={() => navigate('/processing')}>
+                                <span className="material-symbols-outlined">settings_suggest</span>
+                                View Pipeline
+                            </button>
+                            <button className="action-btn" onClick={() => navigate('/reports')}>
+                                <span className="material-symbols-outlined">description</span>
+                                Generate Report
+                            </button>
+                            <button className="action-btn" onClick={() => navigate('/ai-assistant')}>
+                                <span className="material-symbols-outlined">smart_toy</span>
+                                AI Assistant
+                            </button>
                         </div>
-                        {pipeline ? (
-                            <div className="pipeline-list">
-                                {Object.entries(pipeline.stages).map(([stage, pct]) => (
-                                    <div className="pipeline-item" key={stage}>
-                                        <div className="pipeline-info">
-                                            <span>{stage.replace(/_/g, ' ')}</span>
-                                            <span>{formatPercent(pct)}</span>
-                                        </div>
-                                        <div className="pipeline-bar-bg">
-                                            <div
-                                                className={`pipeline-bar-fill ${pct === 1 ? 'complete' : ''}`}
-                                                style={{ width: formatPercent(pct) }}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
-                                <div className="pipeline-status">
-                                    CURRENT STEP: {pipeline.current.message.toUpperCase()}
-                                </div>
-                            </div>
-                        ) : (
-                            <div style={{ color: '#A1A1AA', fontSize: 14 }}>No active pipelines...</div>
-                        )}
                     </div>
-
-                    {/* Bottom Actions */}
-                    <div className="dashboard-actions">
-                        <button className="action-btn action-btn-primary" onClick={() => navigate('/documents')}>
-                            <span className="material-symbols-outlined">upload_file</span>
-                            Upload Documents
-                        </button>
-                        <button className="action-btn" onClick={() => alert('Report Generation Triggered')}>
-                            <span className="material-symbols-outlined">summarize</span>
-                            Generate Report
-                        </button>
-                        <button className="action-btn" onClick={() => navigate('/ai-assistant')}>
-                            <span className="material-symbols-outlined">smart_toy</span>
-                            Ask AI Assistant
-                        </button>
-                    </div>
-
                 </div>
             )}
         </AppLayout>

@@ -1,11 +1,77 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
+import api, { getProjectFindings, updateFindingStatus } from '../api';
 import './AnalysisPage.css';
 
 export default function AnalysisPage() {
     const navigate = useNavigate();
     const [selectedProject, setSelectedProject] = useState(null);
+    const [findings, setFindings] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState('all');
+
+    // Fetch findings when project is selected
+    useEffect(() => {
+        if (!selectedProject) {
+            setLoading(false);
+            return;
+        }
+
+        const fetchFindings = async () => {
+            setLoading(true);
+            try {
+                const res = await getProjectFindings(selectedProject.id);
+                if (res.data?.findings) {
+                    setFindings(res.data.findings);
+                }
+            } catch (err) {
+                console.error("Failed to load findings:", err);
+                setFindings([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchFindings();
+    }, [selectedProject]);
+
+    // Group findings by severity
+    const criticalFindings = findings.filter(f => f.severity === 'CRITICAL' || f.severity === 'HIGH');
+    const highFindings = findings.filter(f => f.severity === 'HIGH');
+    const mediumFindings = findings.filter(f => f.severity === 'MEDIUM');
+    const lowFindings = findings.filter(f => f.severity === 'LOW');
+
+    // Filter findings for display
+    const filteredFindings = filter === 'all' 
+        ? findings 
+        : findings.filter(f => f.severity === filter.toUpperCase());
+
+    const handleStatusUpdate = async (findingId, newStatus) => {
+        try {
+            await updateFindingStatus(findingId, newStatus);
+            // Refresh findings
+            const res = await getProjectFindings(selectedProject.id);
+            if (res.data?.findings) {
+                setFindings(res.data.findings);
+            }
+        } catch (err) {
+            console.error("Failed to update finding:", err);
+        }
+    };
+
+    // Show project selection prompt if no project selected
+    if (!selectedProject) {
+        return (
+            <AppLayout selectedProject={null} onSelectProject={setSelectedProject}>
+                <div className="no-project-selected">
+                    <span className="material-symbols-outlined">analytics</span>
+                    <h2>Select a Project</h2>
+                    <p>Choose a project from the sidebar to view analysis</p>
+                </div>
+            </AppLayout>
+        );
+    }
 
     return (
         <AppLayout selectedProject={selectedProject} onSelectProject={setSelectedProject}>
@@ -15,10 +81,10 @@ export default function AnalysisPage() {
                 <div className="analysis-header-section">
                     <div className="analysis-titles">
                         <h1>Analysis</h1>
-                        <p>AI-detected risks across <strong>142 legal & financial documents</strong></p>
+                        <p>AI-detected risks across <strong>{findings.length} findings</strong></p>
                     </div>
                     <div className="analysis-actions">
-                        <button className="analysis-btn-secondary">
+                        <button className="analysis-btn-secondary" onClick={() => setFilter(filter === 'all' ? 'all' : 'all')}>
                             <span className="material-symbols-outlined">filter_list</span>
                             FILTER
                         </button>
@@ -29,153 +95,125 @@ export default function AnalysisPage() {
                     </div>
                 </div>
 
-                {/* Risk Score Cards */}
-                <div className="risk-cards-grid">
-                    <div className="risk-card critical-risk">
-                        <div className="risk-header">
-                            <span>CRITICAL RISKS</span>
-                            <span className="material-symbols-outlined icon-critical">error</span>
-                        </div>
-                        <div className="risk-metrics">
-                            <div className="risk-value">05</div>
-                            <div className="risk-label">ANOMALIES</div>
-                        </div>
+                {loading ? (
+                    <div className="loading-container">
+                        <span className="material-symbols-outlined spinning">progress_activity</span>
+                        <p>Loading analysis...</p>
                     </div>
+                ) : (
+                    <>
+                        {/* Risk Score Cards */}
+                        <div className="risk-cards-grid">
+                            <div className="risk-card critical-risk">
+                                <div className="risk-header">
+                                    <span>CRITICAL RISKS</span>
+                                    <span className="material-symbols-outlined icon-critical">error</span>
+                                </div>
+                                <div className="risk-metrics">
+                                    <div className="risk-value">{criticalFindings.length.toString().padStart(2, '0')}</div>
+                                    <div className="risk-label">ANOMALIES</div>
+                                </div>
+                            </div>
 
-                    <div className="risk-card">
-                        <div className="risk-header">
-                            <span>HIGH RISKS</span>
-                            <span className="material-symbols-outlined icon-high">warning</span>
+                            <div className="risk-card">
+                                <div className="risk-header">
+                                    <span>HIGH RISKS</span>
+                                    <span className="material-symbols-outlined icon-high">warning</span>
+                                </div>
+                                <div className="risk-metrics">
+                                    <div className="risk-value">{highFindings.length.toString().padStart(2, '0')}</div>
+                                    <div className="risk-label">DETECTED</div>
+                                </div>
+                            </div>
+
+                            <div className="risk-card">
+                                <div className="risk-header">
+                                    <span>MEDIUM RISKS</span>
+                                    <span className="material-symbols-outlined icon-medium">info</span>
+                                </div>
+                                <div className="risk-metrics">
+                                    <div className="risk-value">{mediumFindings.length.toString().padStart(2, '0')}</div>
+                                    <div className="risk-label">ITEMS</div>
+                                </div>
+                            </div>
+
+                            <div className="risk-card">
+                                <div className="risk-header">
+                                    <span>LOW RISKS</span>
+                                    <span className="material-symbols-outlined icon-low">check_circle</span>
+                                </div>
+                                <div className="risk-metrics">
+                                    <div className="risk-value">{lowFindings.length.toString().padStart(2, '0')}</div>
+                                    <div className="risk-label">ITEMS</div>
+                                </div>
+                            </div>
                         </div>
-                        <div className="risk-metrics">
-                            <div className="risk-value">12</div>
-                            <div className="risk-label">DETECTED</div>
+
+                        {/* Findings Section */}
+                        <div className="analysis-section">
+                            <div className="section-title">
+                                <span className="material-symbols-outlined">insert_chart</span>
+                                <h2>All Findings</h2>
+                                <span className="alert-badge">{findings.length} TOTAL</span>
+                            </div>
+
+                            <div className="table-card" style={{ paddingBottom: 0 }}>
+                                {filteredFindings.length > 0 ? (
+                                    <table className="analysis-table anomalies-table">
+                                        <thead>
+                                            <tr>
+                                                <th style={{ width: '20%' }}>DOCUMENT</th>
+                                                <th style={{ width: '10%' }}>CATEGORY</th>
+                                                <th style={{ width: '10%' }}>TYPE</th>
+                                                <th style={{ width: '35%' }}>DESCRIPTION</th>
+                                                <th style={{ width: '10%' }}>SEVERITY</th>
+                                                <th style={{ width: '15%', textAlign: 'right' }}>STATUS</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredFindings.map((finding) => (
+                                                <tr key={finding.id}>
+                                                    <td>
+                                                        <strong 
+                                                            className="clickable-doc"
+                                                            onClick={() => navigate(`/documents/${finding.doc_id}`)}
+                                                        >
+                                                            {finding.doc_name || `Document ${finding.doc_id}`}
+                                                        </strong>
+                                                    </td>
+                                                    <td className="anomaly-type">{finding.category}</td>
+                                                    <td className="anomaly-type">{finding.type}</td>
+                                                    <td className="desc-cell">{finding.description}</td>
+                                                    <td>
+                                                        <span className={`severity-badge sev-${finding.severity?.toLowerCase()}`}>
+                                                            {finding.severity}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ textAlign: 'right' }}>
+                                                        <span className={`status-pill status-${finding.status?.toLowerCase() || 'pending'}`}>
+                                                            {finding.status || 'PENDING'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                ) : (
+                                    <div className="empty-state">
+                                        <span className="material-symbols-outlined">check_circle</span>
+                                        <p>No findings detected</p>
+                                        <span className="sub-text">Upload and process documents to see AI-detected risks</span>
+                                    </div>
+                                )}
+                                {filteredFindings.length > 5 && (
+                                    <div className="view-all-row">
+                                        <button className="view-all-btn">VIEW ALL {filteredFindings.length} FINDINGS</button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
-
-                    <div className="risk-card">
-                        <div className="risk-header">
-                            <span>MEDIUM RISKS</span>
-                            <span className="material-symbols-outlined icon-medium">info</span>
-                        </div>
-                        <div className="risk-metrics">
-                            <div className="risk-value">18</div>
-                            <div className="risk-label"></div>
-                        </div>
-                    </div>
-
-                    <div className="risk-card">
-                        <div className="risk-header">
-                            <span>LOW RISKS</span>
-                            <span className="material-symbols-outlined icon-low">check_circle</span>
-                        </div>
-                        <div className="risk-metrics">
-                            <div className="risk-value">32</div>
-                            <div className="risk-label"></div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Potential Duplicate Invoices Section */}
-                <div className="analysis-section">
-                    <div className="section-title">
-                        <span className="material-symbols-outlined">content_copy</span>
-                        <h2>Potential Duplicate Invoices</h2>
-                        <span className="alert-badge">2 ALERTS</span>
-                    </div>
-
-                    <div className="table-card">
-                        <table className="analysis-table">
-                            <thead>
-                                <tr>
-                                    <th>INVOICE ID A</th>
-                                    <th>INVOICE ID B</th>
-                                    <th>SIMILARITY %</th>
-                                    <th>VENDOR</th>
-                                    <th>AMOUNT</th>
-                                    <th style={{ textAlign: 'right' }}>ACTIONS</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td className="mono-text">INV-2023-001</td>
-                                    <td className="mono-text">INV-2023-001-A</td>
-                                    <td><strong>94%</strong></td>
-                                    <td>TechSupply Inc.</td>
-                                    <td className="mono-text">$12,450.00</td>
-                                    <td className="actions-cell">
-                                        <button className="action-btn review-btn" onClick={() => navigate('/documents/inv_001')}>REVIEW</button>
-                                        <button className="action-btn dismiss-btn">DISMISS</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="mono-text">INV-8821</td>
-                                    <td className="mono-text">INV-8821_REV</td>
-                                    <td><strong>87%</strong></td>
-                                    <td>Logistics Partners</td>
-                                    <td className="mono-text">$4,200.00</td>
-                                    <td className="actions-cell">
-                                        <button className="action-btn review-btn" onClick={() => navigate('/documents/inv_002')}>REVIEW</button>
-                                        <button className="action-btn dismiss-btn">DISMISS</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                {/* Financial Anomalies Section */}
-                <div className="analysis-section">
-                    <div className="section-title">
-                        <span className="material-symbols-outlined">insert_chart</span>
-                        <h2>Financial Anomalies</h2>
-                    </div>
-
-                    <div className="table-card" style={{ paddingBottom: 0 }}>
-                        <table className="analysis-table anomalies-table">
-                            <thead>
-                                <tr>
-                                    <th style={{ width: '20%' }}>DOCUMENT</th>
-                                    <th style={{ width: '15%' }}>TYPE</th>
-                                    <th style={{ width: '40%' }}>DESCRIPTION</th>
-                                    <th style={{ width: '10%' }}>SEVERITY</th>
-                                    <th style={{ width: '15%', textAlign: 'right' }}>STATUS</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><strong>Q3_Financials_Draft.pdf</strong></td>
-                                    <td className="anomaly-type">AMOUNT<br />MISMATCH</td>
-                                    <td className="desc-cell">Total revenue in table does not match summary on page 1.</td>
-                                    <td><span className="severity-badge sev-critical">CRITICAL</span></td>
-                                    <td style={{ textAlign: 'right' }}><span className="status-pill status-pending">PENDING</span></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Service_Agreement_Alpha.docx</strong></td>
-                                    <td className="anomaly-type">MISSING CLAUSE</td>
-                                    <td className="desc-cell">Standard indemnity clause detected as missing compared to template.</td>
-                                    <td><span className="severity-badge sev-high">HIGH</span></td>
-                                    <td style={{ textAlign: 'right' }}><span className="status-pill status-review">IN REVIEW</span></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Vendor_List_2023.xlsx</strong></td>
-                                    <td className="anomaly-type">UNVERIFIED<br />ENTITY</td>
-                                    <td className="desc-cell">Vendor "Acme Shell Co" has no matching tax ID in records.</td>
-                                    <td><span className="severity-badge sev-medium">MEDIUM</span></td>
-                                    <td style={{ textAlign: 'right' }}>
-                                        <span className="status-pill status-resolved">
-                                            <span className="material-symbols-outlined" style={{ fontSize: 12 }}>check</span> RESOLVED
-                                        </span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <div className="view-all-row">
-                            <button className="view-all-btn">VIEW ALL 18 ANOMALIES</button>
-                        </div>
-                    </div>
-                </div>
-
+                    </>
+                )}
             </div>
         </AppLayout>
     );

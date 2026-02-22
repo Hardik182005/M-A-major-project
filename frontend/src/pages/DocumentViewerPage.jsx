@@ -1,36 +1,116 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../api';
+import api, {
+    getDocumentText,
+    getDocumentClassification,
+    getPIIEntities,
+    getDocumentFindings,
+    getStructuredData,
+    downloadDocumentBlob
+} from '../api';
 import './DocumentViewerPage.css';
 
 export default function DocumentViewerPage() {
     const { docId } = useParams();
     const navigate = useNavigate();
     const [document, setDocument] = useState(null);
+    const [documentText, setDocumentText] = useState(null);
+    const [classification, setClassification] = useState(null);
+    const [piiEntities, setPiiEntities] = useState([]);
+    const [findings, setFindings] = useState([]);
+    const [structuredData, setStructuredData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
     const [activeTab, setActiveTab] = useState('AI Findings');
 
     useEffect(() => {
-        // Here we would ideally fetch the specific document by ID. 
-        // For demonstration (since the exact generic GET /documents/{id} might not completely exist without projects on this layer),
-        // we will fetch projects and scan for the doc, or just mock it cleanly directly representing the exact logic.
+        const fetchDocumentData = async () => {
+            setLoading(true);
+            try {
+                // Fetch document details from projects endpoint
+                const projectsRes = await api.get('/projects');
+                let foundDoc = null;
 
-        // Mocking the document object based on exact provided logic rules since the UI requires deep AI states
-        setDocument({
-            id: docId,
-            filename: "vendor_agreement_acme.pdf",
-            version: "3",
-            file_size: "2.4 MB",
-            checksum: "8a9d8f...f4e2b1",
-            page_count: 12,
-            created_by: "Johnathan Doe",
-            created_at: "Oct 24, 2023 14:32 PST"
-        });
-        setLoading(false);
+                if (projectsRes.data) {
+                    const projects = Array.isArray(projectsRes.data) ? projectsRes.data : (projectsRes.data.projects || []);
+                    for (const project of projects) {
+                        const docsRes = await api.get(`/projects/${project.id}/documents`);
+                        if (docsRes.data?.documents) {
+                            foundDoc = docsRes.data.documents.find(d => d.id === parseInt(docId));
+                            if (foundDoc) {
+                                foundDoc.projectId = project.id;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (foundDoc) {
+                    setDocument(foundDoc);
+
+                    // Fetch all related data in parallel
+                    const [textRes, classRes, piiRes, findingsRes, structRes, blobRes] = await Promise.all([
+                        getDocumentText(docId).catch(() => ({ data: null })),
+                        getDocumentClassification(docId).catch(() => ({ data: null })),
+                        getPIIEntities(docId).catch(() => ({ data: null })),
+                        getDocumentFindings(docId).catch(() => ({ data: null })),
+                        getStructuredData(docId).catch(() => ({ data: null })),
+                        downloadDocumentBlob(docId).catch(() => ({ data: null }))
+                    ]);
+
+                    if (textRes.data) setDocumentText(textRes.data);
+                    if (classRes.data) setClassification(classRes.data);
+                    if (piiRes.data?.entities) setPiiEntities(piiRes.data.entities);
+                    if (findingsRes.data?.findings) setFindings(findingsRes.data.findings);
+                    if (structRes.data) setStructuredData(structRes.data);
+                    if (blobRes.data) {
+                        const objectUrl = URL.createObjectURL(blobRes.data);
+                        setPdfBlobUrl(objectUrl);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load document:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (docId) {
+            fetchDocumentData();
+        }
+
+        // Cleanup URL memory leak
+        return () => {
+            if (pdfBlobUrl) {
+                URL.revokeObjectURL(pdfBlobUrl);
+            }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [docId]);
 
-    if (loading || !document) {
-        return <div className="viewer-loading">Loading Document Workspace...</div>;
+    // Group findings by severity
+    const criticalFindings = findings.filter(f => f.severity === 'CRITICAL');
+    const highFindings = findings.filter(f => f.severity === 'HIGH');
+    const mediumFindings = findings.filter(f => f.severity === 'MEDIUM');
+    const lowFindings = findings.filter(f => f.severity === 'LOW');
+
+    if (loading) {
+        return (
+            <div className="viewer-loading">
+                <span className="material-symbols-outlined spinning">progress_activity</span>
+                <p>Loading Document Workspace...</p>
+            </div>
+        );
+    }
+
+    if (!document) {
+        return (
+            <div className="viewer-loading">
+                <span className="material-symbols-outlined">error</span>
+                <p>Document not found</p>
+                <button onClick={() => navigate('/documents')}>Back to Documents</button>
+            </div>
+        );
     }
 
     return (
@@ -69,7 +149,7 @@ export default function DocumentViewerPage() {
                         </div>
                         <div className="pdf-pages">
                             <span className="material-symbols-outlined">description</span>
-                            Page <strong>3</strong> of 12
+                            Page <strong>1</strong> of {document.page_count || 1}
                         </div>
                         <div className="pdf-actions">
                             <button><span className="material-symbols-outlined">print</span></button>
@@ -79,36 +159,43 @@ export default function DocumentViewerPage() {
                     </div>
 
                     <div className="pdf-render-area">
-                        {/* Mock PDF Content representing the exact layout */}
-                        <div className="pdf-mock-page">
-                            <h2>VENDOR AGREEMENT</h2>
-                            <span className="doc-ref">Doc Ref: VA-2023-ACME-003</span>
-
-                            <p><strong>3.1 SERVICES.</strong> Vendor agrees to provide the services described in Exhibit A attached hereto (the "Services") in a professional and workmanlike manner, consistent with industry standards.</p>
-
-                            <div className="pdf-highlight red-highlight">
-                                <p><strong>3.2 FEES AND PAYMENT.</strong> Client shall pay Vendor the fees set forth in Exhibit A. Unless otherwise stated, all invoices are due within thirty (30) days of receipt. Total project cost is estimated at $24,500.00 USD, payable in installments.</p>
+                        {/* Document Text Content */}
+                        {document.file_type === 'application/pdf' || document.file_type?.startsWith('image/') ? (
+                            pdfBlobUrl ? (
+                                <iframe
+                                    src={pdfBlobUrl}
+                                    className="pdf-viewer"
+                                    style={{ width: '100%', height: '100%', border: 'none' }}
+                                    title={document.filename}
+                                />
+                            ) : (
+                                <div className="pdf-mock-page">
+                                    <span className="material-symbols-outlined spinning">progress_activity</span>
+                                    <p>Loading document viewer...</p>
+                                </div>
+                            )
+                        ) : (
+                            <div className="pdf-mock-page">
+                                {documentText?.text ? (
+                                    <div className="document-text">
+                                        {documentText.text.split('\n').map((paragraph, idx) => (
+                                            <p key={idx}>{paragraph}</p>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="no-text-placeholder">
+                                        <span className="material-symbols-outlined">description</span>
+                                        <h3>{document.filename}</h3>
+                                        <p>Document text extraction pending or not available.</p>
+                                        <div className="doc-meta">
+                                            <p><strong>File Size:</strong> {document.file_size ? `${Math.round(document.file_size / 1024)} KB` : 'N/A'}</p>
+                                            <p><strong>Checksum:</strong> {document.checksum || 'N/A'}</p>
+                                            <p><strong>Status:</strong> {document.status || 'Unknown'}</p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-
-                            <p><strong>3.3 CONFIDENTIALITY.</strong> Both parties agree to hold all Confidential Information in strict confidence and not to disclose such information to any third party without prior written consent.</p>
-
-                            <div className="pdf-highlight yellow-highlight">
-                                <p><strong>3.4 DATA PRIVACY.</strong> Vendor acknowledges that it may have access to Personally Identifiable Information (PII) including but not limited to employee names and social security numbers. For example, primary contact validation requires SSN: <span className="redacted">XXX-XX-XXXX</span>.</p>
-                            </div>
-
-                            <p><strong>3.5 INTELLECTUAL PROPERTY.</strong> All deliverables created under this Agreement shall be considered "works made for hire" and shall be the exclusive property of Client.</p>
-
-                            <div className="pdf-highlight grey-highlight" style={{ textAlign: 'center', color: '#71717A', fontStyle: 'italic', padding: '12px' }}>
-                                [ Missing: Termination Clause ]
-                            </div>
-
-                            <p><strong>5.1 GOVERNING LAW.</strong> This Agreement shall be governed by and construed in accordance with the laws of the State of Delaware.</p>
-
-                            <div className="signatures">
-                                <div className="sig-line">CLIENT SIGNATURE</div>
-                                <div className="sig-line">VENDOR SIGNATURE</div>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
 
@@ -117,85 +204,216 @@ export default function DocumentViewerPage() {
                     <div className="insights-header">
                         <h2>Insights</h2>
                         <div className="insights-tabs-pills">
-                            <button className={`pill-tab ${activeTab === 'Metadata' ? 'active' : ''}`} onClick={() => setActiveTab('Metadata')}>
+                            <button
+                                className={`pill-tab ${activeTab === 'Metadata' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('Metadata')}
+                            >
                                 Metadata
                             </button>
-                            <button className={`pill-tab ${activeTab === 'Extracted Data' ? 'active' : ''}`} onClick={() => setActiveTab('Extracted Data')}>
+                            <button
+                                className={`pill-tab ${activeTab === 'Extracted Data' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('Extracted Data')}
+                            >
                                 Extracted Data
                             </button>
-                            <button className={`pill-tab ${activeTab === 'PII Detected' ? 'active' : ''}`} onClick={() => setActiveTab('PII Detected')}>
-                                PII Detected <span className="dot orange-dot"></span>
+                            <button
+                                className={`pill-tab ${activeTab === 'PII Detected' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('PII Detected')}
+                            >
+                                PII Detected {piiEntities.length > 0 && <span className="dot orange-dot"></span>}
                             </button>
-                            <button className={`pill-tab ${activeTab === 'AI Findings' ? 'active' : ''}`} onClick={() => setActiveTab('AI Findings')}>
-                                AI Findings <span className="dot red-dot"></span>
+                            <button
+                                className={`pill-tab ${activeTab === 'AI Findings' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('AI Findings')}
+                            >
+                                AI Findings {findings.length > 0 && <span className="dot red-dot"></span>}
                             </button>
                         </div>
                     </div>
 
                     <div className="insights-scroll-area">
-                        {activeTab === 'AI Findings' ? (
-                            <div className="ai-findings-content fade-in">
-
-                                <div className="findings-group-title">Critical Risk Anomalies</div>
-                                <div className="insight-card ai-risk-card-critical">
-                                    <h3 className="risk-card-title critical-title">
-                                        <span className="dot red-dot"></span> Amount Discrepancy
-                                    </h3>
-                                    <p className="risk-card-desc">
-                                        Section 3.2: Expected $21,000 based on v2, found $24,500. This exceeds authorized limits.
-                                    </p>
+                        {activeTab === 'Metadata' && (
+                            <div className="metadata-content fade-in">
+                                <div className="insight-card">
+                                    <h3>Document Information</h3>
+                                    <div className="meta-grid">
+                                        <div className="meta-item">
+                                            <span className="meta-label">Filename</span>
+                                            <span className="meta-value">{document.filename}</span>
+                                        </div>
+                                        <div className="meta-item">
+                                            <span className="meta-label">Type</span>
+                                            <span className="meta-value">{classification?.doc_type || document.file_type || 'Unknown'}</span>
+                                        </div>
+                                        <div className="meta-item">
+                                            <span className="meta-label">Sensitivity</span>
+                                            <span className="meta-value">{classification?.sensitivity || 'N/A'}</span>
+                                        </div>
+                                        <div className="meta-item">
+                                            <span className="meta-label">Pages</span>
+                                            <span className="meta-value">{document.page_count || 'N/A'}</span>
+                                        </div>
+                                        <div className="meta-item">
+                                            <span className="meta-label">Version</span>
+                                            <span className="meta-value">v{document.version}</span>
+                                        </div>
+                                        <div className="meta-item">
+                                            <span className="meta-label">Checksum</span>
+                                            <span className="meta-value mono">{document.checksum?.substring(0, 12) || 'N/A'}...</span>
+                                        </div>
+                                    </div>
+                                    {classification?.tags && (
+                                        <div className="tags-section">
+                                            <span className="meta-label">Tags</span>
+                                            <div className="tags-list">
+                                                {classification.tags.map((tag, i) => (
+                                                    <span key={i} className="tag">{tag}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-
-                                <div className="findings-group-title" style={{ marginTop: '24px' }}>Other Findings</div>
-                                <div className="insight-card ai-risk-card-other">
-                                    <div className="other-finding-item">
-                                        <h4 className="other-finding-title">
-                                            <span className="dot orange-dot"></span> PII Exposure
-                                        </h4>
-                                        <p className="risk-card-desc">
-                                            Section 3.4: Plaintext SSN format detected. Recommend immediate redaction.
-                                        </p>
-                                    </div>
-                                    <div className="other-finding-item" style={{ margin: '16px 0' }}>
-                                        <h4 className="other-finding-title">
-                                            <span className="dot yellow-dot"></span> Missing Clause
-                                        </h4>
-                                        <p className="risk-card-desc">
-                                            Section 4.0: Standard 'Termination for Convenience' clause is missing.
-                                        </p>
-                                    </div>
-                                    <div className="other-finding-item">
-                                        <h4 className="other-finding-title">
-                                            <span className="dot grey-dot"></span> Standard Clause
-                                        </h4>
-                                        <p className="risk-card-desc">
-                                            Section 3.1: Language matches corporate baseline for services.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="insight-card risk-dist-card">
-                                    <h3 className="risk-dist-title">RISK DISTRIBUTION</h3>
-                                    <div className="risk-dist-bar">
-                                        <div className="rd-segment bg-critical" style={{ width: '25%' }}></div>
-                                        <div className="rd-segment bg-high" style={{ width: '25%' }}></div>
-                                        <div className="rd-segment bg-medium" style={{ width: '25%' }}></div>
-                                        <div className="rd-segment bg-low" style={{ width: '25%' }}></div>
-                                    </div>
-                                    <div className="risk-dist-legend">
-                                        <div className="rdl-item"><span className="dot bg-critical"></span> 1 CRITICAL</div>
-                                        <div className="rdl-item"><span className="dot bg-high"></span> 1 HIGH</div>
-                                        <div className="rdl-item"><span className="dot bg-medium"></span> 1 MEDIUM</div>
-                                        <div className="rdl-item"><span className="dot bg-low"></span> 1 LOW</div>
-                                    </div>
-                                </div>
-
                             </div>
-                        ) : (
-                            <div className="tab-placeholder fade-in">
-                                <span className="material-symbols-outlined" style={{ fontSize: '48px', color: '#3F3F46', marginBottom: '16px' }}>construction</span>
-                                <h3>Module Under Construction</h3>
-                                <p>This specific insights lens is currently being updated by the processing pipeline.</p>
+                        )}
+
+                        {activeTab === 'Extracted Data' && (
+                            <div className="extracted-content fade-in">
+                                {structuredData?.json_blob ? (
+                                    <div className="insight-card">
+                                        <h3>Structured Data</h3>
+                                        <pre className="json-display">
+                                            {JSON.stringify(structuredData.json_blob, null, 2)}
+                                        </pre>
+                                    </div>
+                                ) : (
+                                    <div className="tab-placeholder">
+                                        <span className="material-symbols-outlined">table_document</span>
+                                        <h3>No Structured Data</h3>
+                                        <p>Structured data extraction is pending or not available for this document type.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'PII Detected' && (
+                            <div className="pii-content fade-in">
+                                {piiEntities.length > 0 ? (
+                                    <div className="pii-list">
+                                        <div className="insight-card pii-summary">
+                                            <h3>{piiEntities.length} PII Entities Detected</h3>
+                                            <p className="pii-warning">Sensitive information has been identified and may require redaction.</p>
+                                        </div>
+                                        {piiEntities.map((entity, i) => (
+                                            <div key={i} className="insight-card pii-item">
+                                                <div className="pii-header">
+                                                    <span className="pii-label">{entity.label}</span>
+                                                    <span className="pii-confidence">{Math.round((entity.confidence || 0) * 100)}% confidence</span>
+                                                </div>
+                                                <div className="pii-text">"{entity.text}"</div>
+                                                {entity.replacement && (
+                                                    <div className="pii-replacement">Replacement: {entity.replacement}</div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="tab-placeholder">
+                                        <span className="material-symbols-outlined">verified_user</span>
+                                        <h3>No PII Detected</h3>
+                                        <p>No personally identifiable information was found in this document.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'AI Findings' && (
+                            <div className="ai-findings-content fade-in">
+                                {findings.length > 0 ? (
+                                    <>
+                                        {criticalFindings.length > 0 && (
+                                            <>
+                                                <div className="findings-group-title">Critical Risk Anomalies</div>
+                                                {criticalFindings.map((finding) => (
+                                                    <div key={finding.id} className="insight-card ai-risk-card-critical">
+                                                        <h3 className="risk-card-title critical-title">
+                                                            <span className="dot red-dot"></span> {finding.type}
+                                                        </h3>
+                                                        <p className="risk-card-desc">{finding.description}</p>
+                                                        {finding.evidence && (
+                                                            <div className="evidence">
+                                                                <span>Page {finding.evidence.page || 'N/A'}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </>
+                                        )}
+
+                                        {highFindings.length > 0 && (
+                                            <>
+                                                <div className="findings-group-title" style={{ marginTop: '24px' }}>High Priority</div>
+                                                {highFindings.map((finding) => (
+                                                    <div key={finding.id} className="insight-card ai-risk-card-other">
+                                                        <div className="other-finding-item">
+                                                            <h4 className="other-finding-title">
+                                                                <span className="dot orange-dot"></span> {finding.type}
+                                                            </h4>
+                                                            <p className="risk-card-desc">{finding.description}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </>
+                                        )}
+
+                                        {(mediumFindings.length > 0 || lowFindings.length > 0) && (
+                                            <>
+                                                <div className="findings-group-title" style={{ marginTop: '24px' }}>Other Findings</div>
+                                                <div className="insight-card ai-risk-card-other">
+                                                    {mediumFindings.map((finding) => (
+                                                        <div key={finding.id} className="other-finding-item">
+                                                            <h4 className="other-finding-title">
+                                                                <span className="dot yellow-dot"></span> {finding.type}
+                                                                {finding.category && <span className={`finding-category-badge category-${finding.category.toLowerCase()}`}>{finding.category}</span>}
+                                                            </h4>
+                                                            <p className="risk-card-desc">{finding.description}</p>
+                                                        </div>
+                                                    ))}
+                                                    {lowFindings.map((finding) => (
+                                                        <div key={finding.id} className="other-finding-item" style={{ margin: '16px 0' }}>
+                                                            <h4 className="other-finding-title">
+                                                                <span className="dot grey-dot"></span> {finding.type}
+                                                                {finding.category && <span className={`finding-category-badge category-${finding.category.toLowerCase()}`}>{finding.category}</span>}
+                                                            </h4>
+                                                            <p className="risk-card-desc">{finding.description}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+
+                                        <div className="insight-card risk-dist-card">
+                                            <h3 className="risk-dist-title">RISK DISTRIBUTION</h3>
+                                            <div className="risk-dist-bar">
+                                                {criticalFindings.length > 0 && <div className="rd-segment bg-critical" style={{ width: `${(criticalFindings.length / findings.length) * 100}%` }}></div>}
+                                                {highFindings.length > 0 && <div className="rd-segment bg-high" style={{ width: `${(highFindings.length / findings.length) * 100}%` }}></div>}
+                                                {mediumFindings.length > 0 && <div className="rd-segment bg-medium" style={{ width: `${(mediumFindings.length / findings.length) * 100}%` }}></div>}
+                                                {lowFindings.length > 0 && <div className="rd-segment bg-low" style={{ width: `${(lowFindings.length / findings.length) * 100}%` }}></div>}
+                                            </div>
+                                            <div className="risk-dist-legend">
+                                                {criticalFindings.length > 0 && <div className="rdl-item"><span className="dot bg-critical"></span> {criticalFindings.length} CRITICAL</div>}
+                                                {highFindings.length > 0 && <div className="rdl-item"><span className="dot bg-high"></span> {highFindings.length} HIGH</div>}
+                                                {mediumFindings.length > 0 && <div className="rdl-item"><span className="dot bg-medium"></span> {mediumFindings.length} MEDIUM</div>}
+                                                {lowFindings.length > 0 && <div className="rdl-item"><span className="dot bg-low"></span> {lowFindings.length} LOW</div>}
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="tab-placeholder">
+                                        <span className="material-symbols-outlined">check_circle</span>
+                                        <h3>No Findings</h3>
+                                        <p>No AI findings have been generated for this document yet. Processing may still be in progress.</p>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

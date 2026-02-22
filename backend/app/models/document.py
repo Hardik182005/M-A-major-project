@@ -29,6 +29,9 @@ class Document(Base):
     # upload lifecycle: UPLOADING → READY | FAILED
     status = Column(String(30), default="UPLOADING")
 
+    # Page count for processing
+    page_count = Column(Integer, nullable=True)
+
     uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
 
@@ -48,3 +51,12 @@ class Document(Base):
     uploader = relationship("User", foreign_keys=[uploaded_by], backref="uploaded_documents")
     deleter = relationship("User", foreign_keys=[deleted_by])
     locker = relationship("User", foreign_keys=[locked_by])
+    
+    # Processing relationships
+    processing_jobs = relationship("ProcessingJob", back_populates="document", cascade="all, delete-orphan")
+    text_record = relationship("DocumentText", back_populates="document", uselist=False, cascade="all, delete-orphan")
+    pii_entities = relationship("PIIEntity", back_populates="document", cascade="all, delete-orphan")
+    classification = relationship("DocumentClassification", back_populates="document", uselist=False, cascade="all, delete-orphan")
+    structured_data = relationship("DocumentStructured", back_populates="document", cascade="all, delete-orphan")
+    findings = relationship("Finding", back_populates="document", cascade="all, delete-orphan")
+    chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")

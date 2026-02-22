@@ -1,0 +1,38 @@
+# PROJECT ORION: MERGER & ACQUISITION DUE DILIGENCE - MASTER TEST DOCUMENT
+
+## 1. FINANCIAL SUMMARY & INVOICES
+Invoice Number: INV-2023-8891
+Date: 2023-11-15
+Amount: $450,000.00
+Vendor: Global Synergy Tech LLC
+Description: Q4 Consulting Services
+
+Invoice Number: INV-2023-8891
+Date: 2023-11-16
+Amount: $450,000.00
+Vendor: Global Synergy Tech LLC
+Description: Q4 Consulting Services (DUPLICATE DETECTED)
+
+## 2. LEGAL & COMPLIANCE ANOMALIES
+- The company has an ongoing undisclosed litigation case with a former executive (Case #441-A).
+- The GDPR compliance audit from 2022 was failed and never remediated. Data is currently stored without adequate encryption.
+- There is a missing non-compete clause in the CEO's employment contract, allowing them to start a rival firm immediately upon exit.
+- PII Exposure: The primary contact for HR escalations is Sarah Jenkins, SSN: ***-**-1928, Phone: 555-019-2819, Email: s.jenkins@globalsynergy.com. Personal home address is 123 Tech Lane, Silicon Valley, CA.
+
+## 3. ASSET & LIABILITY DISCREPANCIES
+- The reported cash balance is inflated by $2.3 million due to an unrecorded offshore tax liability in the Cayman Islands.
+- Intellectual Property Risk: The core algorithm patent (Patent #99281) expired two months ago and renewal fees were never paid.
+
+## 4. OPERATIONAL RISKS
+- A critical supplier (Vendor ID 881) went bankrupt last month, and there is no secondary supplier for the core hardware components.
+- Server infrastructure relies on unsupported legacy systems spanning past 2015, posing a severe cybersecurity threat.
+
+## 5. CONTRACTUAL ANOMALIES
+- Vendor Agreement XYZ contains an auto-renewal clause with a 500% price increase starting next fiscal year, completely uncapped.
+- Change of Control Clause: If the company is acquired, all existing enterprise customer contracts can be terminated without penalty by the customers within 30 days.
+
+## 6. ENVIRONMENTAL & REGULATORY
+- The primary manufacturing facility failed an EPA inspection for hazardous waste disposal in Q3 2023. Fines are pending and could exceed $5M.
+
+## CONCLUSION
+This document serves as a comprehensive stress-test payload containing duplicate invoices, critical legal risks, exposed PII/PHI, compliance failures, and operational red flags.

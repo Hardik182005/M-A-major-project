@@ -32,5 +32,27 @@ class Settings:
     ALL_ROLES = ["OWNER", "ADMIN", "ANALYST", "VIEWER", "AUDITOR"]
     ROLE_HIERARCHY = {"OWNER": 5, "ADMIN": 4, "ANALYST": 3, "VIEWER": 2, "AUDITOR": 1}
 
+    # ── AI Pipeline ─────────────────────────────────────
+    # Ollama (SLM/LLM)
+    OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "gemma3:270m")
+    OLLAMA_CLASSIFICATION_MODEL: str = os.getenv("OLLAMA_CLASSIFICATION_MODEL", "gemma3:270m")
+    OLLAMA_PII_MODEL: str = os.getenv("OLLAMA_PII_MODEL", "gemma3:270m")
+    OLLAMA_ANALYSIS_MODEL: str = os.getenv("OLLAMA_ANALYSIS_MODEL", "gemma3:270m")
+    OLLAMA_TIMEOUT: int = int(os.getenv("OLLAMA_TIMEOUT", "120"))
+
+    # Donut (VLM)
+    DONUT_MODEL_NAME: str = os.getenv("DONUT_MODEL_NAME", "naver-clova-ix/donut-base-finetuned-cord")
+    DONUT_DEVICE: str = os.getenv("DONUT_DEVICE", "cpu")  # cpu or cuda
+
+    # Processing
+    ENABLE_AUTO_PROCESSING: bool = os.getenv("ENABLE_AUTO_PROCESSING", "true").lower() == "true"
+    MAX_TEXT_LENGTH_FOR_CLASSIFICATION: int = int(os.getenv("MAX_TEXT_LENGTH_FOR_CLASSIFICATION", "12000"))
+    TEXT_EXTRACTION_QUALITY_THRESHOLD: float = float(os.getenv("TEXT_EXTRACTION_QUALITY_THRESHOLD", "0.3"))
+
+    # Worker
+    WORKER_POLL_INTERVAL: int = int(os.getenv("WORKER_POLL_INTERVAL", "5"))
+    WORKER_MAX_RETRIES: int = int(os.getenv("WORKER_MAX_RETRIES", "3"))
+
 
 settings = Settings()

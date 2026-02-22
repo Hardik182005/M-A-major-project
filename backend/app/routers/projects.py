@@ -11,6 +11,10 @@ from app.models.user import User
 from app.models.project import Project
 from app.models.project_member import ProjectMember
 from app.services.audit import log_audit
+from datetime import datetime, date
+from sqlalchemy import func
+from app.models.document import Document
+from app.models.processing import ProcessingJob, Finding
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
@@ -275,17 +279,54 @@ def get_project_analysis_summary(
     member: ProjectMember = Depends(require_min_role("VIEWER")),
     db: Session = Depends(get_db),
 ):
-    """Return a mock AI Verdict for the dashboard."""
+    """Return a real AI Verdict for the dashboard."""
+    # Fetch all findings
+    findings = db.query(Finding).filter(Finding.project_id == project_id).all()
+    
+    if not findings:
+        return {
+            "risk_score": 0,
+            "verdict": "PENDING_REVIEW",
+            "confidence": 0,
+            "highlights": [],
+            "explanation": "No findings have been generated yet. Upload and process documents."
+        }
+
+    high_risk_findings = [f for f in findings if f.severity == 'HIGH']
+    medium_risk_findings = [f for f in findings if f.severity == 'MEDIUM']
+    low_risk_findings = [f for f in findings if f.severity == 'LOW']
+    critical_risk_findings = [f for f in findings if f.severity == 'CRITICAL']
+
+    score = 0
+    score += len(critical_risk_findings) * 30
+    score += len(high_risk_findings) * 20
+    score += len(medium_risk_findings) * 10
+    score += len(low_risk_findings) * 5
+
+    risk_score = min(100, score)
+
+    if risk_score >= 80 or len(critical_risk_findings) > 0:
+        verdict = "HIGH_RISK"
+        explanation = "Multiple critical issues identified. Recommend detailed review before proceeding."
+    elif risk_score >= 50 or len(high_risk_findings) > 2:
+        verdict = "PROCEED_WITH_CAUTION"
+        explanation = "Some critical/high issues identified. Review findings before proceeding."
+    elif risk_score >= 20:
+        verdict = "MODERATE_RISK"
+        explanation = "Several moderate issues identified. Due diligence recommended."
+    else:
+        verdict = "FAVORABLE"
+        explanation = "No significant issues identified. Ready to proceed."
+
+    # get highlights (max 3 high severity)
+    highlights = [{"label": f.type, "type": f.category} for f in (critical_risk_findings + high_risk_findings + medium_risk_findings)[:3]]
+
     return {
-        "risk_score": 67,
-        "verdict": "PROCEED_WITH_CAUTION",
-        "confidence": 0.82,
-        "highlights": [
-            {"label": "Inconsistent IP Clauses", "type": "LEGAL"},
-            {"label": "Pending Litigation", "type": "LEGAL"},
-            {"label": "Unusual Burn Rate", "type": "FINANCIAL"}
-        ],
-        "explanation": "Our AI engine has flagged several medium-to-high risk anomalies that require legal oversight before finalization."
+        "risk_score": risk_score,
+        "verdict": verdict,
+        "confidence": 0.85,
+        "highlights": highlights,
+        "explanation": explanation
     }
 
 @router.get("/{project_id}/metrics")
@@ -294,15 +335,43 @@ def get_project_metrics(
     member: ProjectMember = Depends(require_min_role("VIEWER")),
     db: Session = Depends(get_db),
 ):
-    """Return mock metrics for the 4 KPI tiles."""
+    """Return real metrics for the 4 KPI tiles."""
+    total_docs = db.query(func.count(Document.id)).filter(Document.project_id == project_id, Document.is_deleted == False).scalar()
+    
+    docs_uploaded_today = db.query(func.count(Document.id)).filter(
+        Document.project_id == project_id, 
+        Document.is_deleted == False,
+        func.date(Document.uploaded_at) == date.today()
+    ).scalar()
+
+    processed_docs = db.query(func.count(Document.id)).filter(
+        Document.project_id == project_id, 
+        Document.is_deleted == False,
+        Document.status == 'READY'
+    ).scalar()
+
+    flagged_risks = db.query(func.count(Finding.id)).filter(Finding.project_id == project_id).scalar()
+
+    # Calculate basic risk level based on flagged features
+    risk_level = "LOW"
+    high_risks = db.query(func.count(Finding.id)).filter(Finding.project_id == project_id, Finding.severity.in_(['HIGH', 'CRITICAL'])).scalar()
+    if high_risks > 2:
+        risk_level = "HIGH"
+    elif high_risks > 0 or flagged_risks > 5:
+        risk_level = "MEDIUM"
+
+    from app.routers.reports import _generated_reports
+    reports = _generated_reports.get(project_id, [])
+    reports_count = len(reports)
+    
     return {
-        "total_docs": 142,
-        "docs_uploaded_today": 12,
-        "processed_docs": 128,
-        "flagged_risks": 23,
-        "risk_level": "HIGH",
-        "reports_generated": 3,
-        "latest_report_status": "FINAL_DRAFT"
+        "total_docs": total_docs or 0,
+        "docs_uploaded_today": docs_uploaded_today or 0,
+        "processed_docs": processed_docs or 0,
+        "flagged_risks": flagged_risks or 0,
+        "risk_level": risk_level,
+        "reports_generated": reports_count,
+        "latest_report_status": "Complete" if reports_count > 0 else "N/A"
     }
 
 @router.get("/{project_id}/processing/status")
@@ -311,18 +380,77 @@ def get_project_processing_status(
     member: ProjectMember = Depends(require_min_role("VIEWER")),
     db: Session = Depends(get_db),
 ):
-    """Return mock processing pipeline status."""
-    return {
-        "stages": {
-            "TEXT_EXTRACTION": 1.0,
-            "PII_SCANNING": 0.85,
-            "STRUCTURING": 0.60,
-            "AI_ANALYSIS": 0.30
-        },
-        "current": {
-            "stage": "AI_ANALYSIS",
-            "doc_id": "doc-xyz",
-            "filename": "14.pdf",
-            "message": "Extracting risk factors from 14.pdf"
+    """Return real processing pipeline status."""
+    all_project_jobs = db.query(ProcessingJob).join(Document).filter(
+        Document.project_id == project_id
+    ).order_by(ProcessingJob.updated_at.desc()).all()
+    
+    jobs = all_project_jobs[:1]
+
+    # Calculate overall stage completion based on all active/recent jobs
+    active_jobs = db.query(ProcessingJob).join(Document).filter(
+        Document.project_id == project_id,
+        ProcessingJob.status.in_(['PENDING', 'PROCESSING', 'FAILED'])
+    ).all()
+    
+    if not all_project_jobs:
+        return {
+            "stages": {
+                "TEXT_EXTRACTION": 1.0,
+                "PII_SCANNING": 1.0,
+                "STRUCTURING": 1.0,
+                "AI_ANALYSIS": 1.0
+            },
+            "current": None,
+            "jobs": []
         }
+
+    job = jobs[0] # most recent active or recently updated job
+    doc = db.query(Document).filter(Document.id == job.doc_id).first()
+    
+    stages = {
+        "TEXT_EXTRACTION": 0.0,
+        "PII_SCANNING": 0.0,
+        "STRUCTURING": 0.0,
+        "AI_ANALYSIS": 0.0
+    }
+    
+    # Simple mapping of stage to progress based on job current stage
+    stage_order = ['TEXT_EXTRACTION', 'CLASSIFICATION', 'PII_DETECTION', 'STRUCTURE_EXTRACTION', 'ANALYSIS', 'INDEXING', 'COMPLETED']
+    current_index = stage_order.index(job.stage) if job.stage in stage_order else 0
+    
+    if current_index >= stage_order.index('CLASSIFICATION'): stages["TEXT_EXTRACTION"] = 1.0
+    else: stages["TEXT_EXTRACTION"] = 0.5 if job.status == 'PROCESSING' else 0.0
+    
+    if current_index >= stage_order.index('STRUCTURE_EXTRACTION'): stages["PII_SCANNING"] = 1.0
+    elif current_index >= stage_order.index('PII_DETECTION'): stages["PII_SCANNING"] = 0.5
+    
+    if current_index >= stage_order.index('ANALYSIS'): stages["STRUCTURING"] = 1.0
+    elif current_index >= stage_order.index('STRUCTURE_EXTRACTION'): stages["STRUCTURING"] = 0.5
+    
+    if current_index >= stage_order.index('INDEXING'): stages["AI_ANALYSIS"] = 1.0
+    elif current_index >= stage_order.index('ANALYSIS'): stages["AI_ANALYSIS"] = 0.5
+
+    return {
+        "stages": stages,
+        "current": {
+            "stage": job.stage,
+            "doc_id": job.doc_id,
+            "filename": doc.filename if doc else "Unknown",
+            "message": job.message or f"Processing {job.stage}" if hasattr(job, "message") else f"Processing {job.stage}"
+        },
+        "jobs": [
+            {
+                "id": j.id,
+                "doc_id": j.doc_id,
+                "doc_name": j.document.filename if j.document else f"Document {j.doc_id}",
+                "stage": j.stage,
+                "status": j.status,
+                "progress": j.progress,
+                "updated_at": j.updated_at.isoformat() if j.updated_at else None,
+                "eta_seconds": j.eta_seconds,
+                "error_code": j.error_code,
+                "error_msg": j.error_msg
+            } for j in all_project_jobs
+        ]
     }

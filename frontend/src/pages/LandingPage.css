@@ -178,25 +178,29 @@
 /* ── Rotating Word ──────────────────── */
 @keyframes flipOut {
     0% {
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
         opacity: 1;
+        filter: blur(0px);
     }
 
     100% {
-        transform: translateY(-30px);
+        transform: translateY(-15px) scale(0.95);
         opacity: 0;
+        filter: blur(4px);
     }
 }
 
 @keyframes flipIn {
     0% {
-        transform: translateY(30px);
+        transform: translateY(15px) scale(0.95);
         opacity: 0;
+        filter: blur(4px);
     }
 
     100% {
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
         opacity: 1;
+        filter: blur(0px);
     }
 }
 
@@ -234,8 +238,8 @@
 .hero-title {
     font-size: clamp(48px, 6vw, 80px);
     line-height: 1.05;
-    letter-spacing: -0.03em;
-    font-weight: 700;
+    letter-spacing: -0.04em;
+    font-weight: 300;
     margin-bottom: 24px;
 }
 

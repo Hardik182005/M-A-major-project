@@ -1,20 +1,165 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
+import { chatWithAI, getAIAssistantStatus, uploadDocument } from '../api';
 import './AIAssistantPage.css';
 
 export default function AIAssistantPage() {
-    const [selectedProject, setSelectedProject] = useState({ name: 'Project Alpha', id: 'PA-001' });
+    const { projectId } = useParams();
+    const navigate = useNavigate();
+    const [selectedProject, setSelectedProject] = useState(null);
+    const [chatSessions, setChatSessions] = useState([]);
+    const [activeSessionId, setActiveSessionId] = useState(null);
+    const [input, setInput] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [status, setStatus] = useState(null);
+    const fileInputRef = useRef(null);
+    const [uploadingFile, setUploadingFile] = useState(false);
+
+    useEffect(() => {
+        // Check AI status
+        getAIAssistantStatus().then(res => {
+            setStatus(res.data);
+        }).catch(err => {
+            console.error('AI status error:', err);
+        });
+
+        // Load chat sessions from localStorage
+        if (selectedProject) {
+            const rawSessions = localStorage.getItem(`ai_chat_sessions_${selectedProject.id}`);
+            if (rawSessions) {
+                try {
+                    const parsed = JSON.parse(rawSessions);
+                    setChatSessions(parsed);
+                    if (parsed.length > 0) {
+                        setActiveSessionId(parsed[0].id);
+                    } else {
+                        startNewChat();
+                    }
+                } catch (e) {
+                    console.error("Failed to parse chat sessions");
+                    startNewChat();
+                }
+            } else {
+                startNewChat();
+            }
+        }
+    }, [selectedProject]);
+
+    // Save chat history to localStorage when sessions change
+    useEffect(() => {
+        if (selectedProject && chatSessions.length > 0) {
+            localStorage.setItem(`ai_chat_sessions_${selectedProject.id}`, JSON.stringify(chatSessions));
+        }
+    }, [chatSessions, selectedProject]);
+
+    const startNewChat = () => {
+        const newSession = {
+            id: Date.now().toString(),
+            title: `Chat ${new Date().toLocaleDateString()}`,
+            messages: []
+        };
+        setChatSessions(prev => [newSession, ...prev]);
+        setActiveSessionId(newSession.id);
+    };
+
+    const handleSend = async () => {
+        if (!input.trim() || loading || !selectedProject || !activeSessionId) return;
+
+        const userMessage = input.trim();
+        setInput('');
+
+        // Update session with user message
+        setChatSessions(prev => prev.map(s => {
+            if (s.id === activeSessionId) {
+                const isFirstMsg = s.messages.length === 0;
+                return {
+                    ...s,
+                    title: isFirstMsg ? userMessage.substring(0, 25) + "..." : s.title,
+                    messages: [...s.messages, { role: 'user', content: userMessage }]
+                };
+            }
+            return s;
+        }));
+
+        setLoading(true);
+
+        try {
+            // Get current history for context logic if needed in backend, 
+            // but our backend just takes "message". We will send to backend.
+            const res = await chatWithAI(selectedProject.id, userMessage);
+            const aiResponse = res.data.answer;
+
+            setChatSessions(prev => prev.map(s => s.id === activeSessionId ? {
+                ...s,
+                messages: [...s.messages, { role: 'assistant', content: aiResponse }]
+            } : s));
+        } catch (err) {
+            console.error('Chat error:', err);
+            const errorMsg = err.response?.data?.detail || 'Sorry, I encountered an internal server error while fetching the AI response.';
+            setChatSessions(prev => prev.map(s => s.id === activeSessionId ? {
+                ...s,
+                messages: [...s.messages, { role: 'assistant', content: errorMsg }]
+            } : s));
+        }
+
+        setLoading(false);
+    };
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file || !selectedProject) return;
+
+        setUploadingFile(true);
+        try {
+            const res = await uploadDocument(selectedProject.id, file);
+            alert(`File ${file.name} uploaded successfully!`);
+            // Add a little system message to the chat
+            setChatSessions(prev => prev.map(s => s.id === activeSessionId ? {
+                ...s,
+                messages: [...s.messages, { role: 'assistant', content: `Awesome! I received the file "${file.name}". I'll analyze it in the background.` }]
+            } : s));
+        } catch (err) {
+            console.error('Upload error:', err);
+            alert('Failed to upload file. Please try again.');
+        } finally {
+            setUploadingFile(false);
+            e.target.value = null; // reset input
+        }
+    };
+
+    const activeSession = chatSessions.find(s => s.id === activeSessionId);
+    const messages = activeSession ? activeSession.messages : [];
+
+    const suggestedPrompts = [
+        "What documents are in this data room?",
+        "Summarize the key findings",
+        "Are there any risks identified?",
+        "What PII was detected?"
+    ];
+
+    if (!selectedProject) {
+        return (
+            <AppLayout selectedProject={null} onSelectProject={setSelectedProject}>
+                <div className="no-project-selected">
+                    <span className="material-symbols-outlined">smart_toy</span>
+                    <h2>Select a Project</h2>
+                    <p>Choose a project to chat with the AI Assistant</p>
+                </div>
+            </AppLayout>
+        );
+    }
 
     return (
-        <AppLayout selectedProject={selectedProject?.name} onSelectProject={(name) => setSelectedProject({ name, id: 'PA-001' })}>
+        <AppLayout selectedProject={selectedProject} onSelectProject={setSelectedProject}>
             <div className="ai-assistant-container fade-in">
 
                 {/* Header Section */}
                 <div className="ai-header">
                     <div className="breadcrumb-nav">
-                        <span className="proj-name">Project Alpha</span>
+                        <span className="proj-name">{selectedProject?.name || 'Select Project'}</span>
                         <span className="material-symbols-outlined breadcrumb-arrow">chevron_right</span>
-                        <span className="current-page">AI Due Diligence Assistant</span>
+                        <span className="current-page">MergerMind Assistant</span>
                     </div>
                 </div>
 
@@ -22,161 +167,131 @@ export default function AIAssistantPage() {
                     {/* Main Chat Area */}
                     <div className="ai-chat-area">
                         <div className="chat-history">
-                            <div className="chat-timestamp">Today, 10:23 AM</div>
-
-                            {/* User Message */}
-                            <div className="message-row user-row">
-                                <div className="message-bubble user-bubble">
-                                    What are the key risks identified in the supplier contracts for Q3, specifically regarding termination clauses?
-                                </div>
-                                <div className="message-avatar user-avatar-img">
-                                    AM
-                                </div>
-                            </div>
-
-                            {/* AI Message */}
-                            <div className="message-row ai-row">
-                                <div className="message-avatar ai-avatar-img">
-                                    <span className="material-symbols-outlined">smart_toy</span>
-                                </div>
-                                <div className="message-content">
-                                    <div className="message-bubble ai-bubble">
-                                        <p>Based on the review of 12 supplier agreements in the Data Room, I've identified several primary risks. The analysis highlights inconsistencies in <strong>termination clauses</strong> and potential exposure in <strong>liability caps</strong>.</p>
-
-                                        <p className="key-findings-title">Key Risk Findings:</p>
-                                        <ul className="findings-list">
-                                            <li><strong>Termination for Convenience:</strong> Found in 3 major contracts. This allows the supplier to exit with only 30 days' notice.</li>
-                                            <li><strong>Liability Caps:</strong> Ambiguous language in 2 agreements regarding consequential damages.</li>
-                                            <li><strong>Auto-Renewal:</strong> 5 contracts have auto-renewal clauses with a 90-day opt-out window which was missed in Q2.</li>
-                                        </ul>
-
-                                        <div className="sources-container">
-                                            <div className="sources-label">SOURCES:</div>
-                                            <div className="source-pill">
-                                                <span className="material-symbols-outlined pdf-icon">picture_as_pdf</span>
-                                                <span className="source-name">Supplier_Contract_A.pdf</span>
-                                                <span className="source-page">p.14</span>
-                                            </div>
-                                            <div className="source-pill">
-                                                <span className="material-symbols-outlined pdf-icon">picture_as_pdf</span>
-                                                <span className="source-name">Vendor_Agreement_v2.pdf</span>
-                                                <span className="source-page">p.08</span>
-                                            </div>
+                            {messages.length === 0 && (
+                                <div className="empty-chat">
+                                    <span className="material-symbols-outlined empty-icon" style={{ fontSize: '48px', color: '#60A5FA', marginBottom: '16px' }}>smart_toy</span>
+                                    <h3 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '12px' }}>Hi there! How can I help?</h3>
+                                    <p style={{ color: '#A1A1AA', lineHeight: '1.6', marginBottom: '24px', maxWidth: '400px', textAlign: 'center' }}>
+                                        I am MergerMind, your personal AI Due Diligence Analyst. I can help you analyze risks, find PII, summarize findings, and track trends in your documents!
+                                    </p>
+                                    {status && (
+                                        <div className="ai-status">
+                                            <span className="status-dot"></span>
+                                            Powered by {status.model}
                                         </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {messages.map((msg, idx) => (
+                                <div key={idx} className={`message-row ${msg.role}-row`}>
+                                    {msg.role === 'assistant' && (
+                                        <div className="message-avatar ai-avatar-img">
+                                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>smart_toy</span>
+                                        </div>
+                                    )}
+                                    <div className={`message-bubble ${msg.role === 'user' ? 'user-bubble' : 'ai-bubble'}`}>
+                                        {msg.content}
                                     </div>
-                                    <div className="message-footer">
-                                        <span>MergerMind AI • 10:24 AM</span>
-                                        <button className="icon-action-btn"><span className="material-symbols-outlined">content_copy</span></button>
-                                        <button className="icon-action-btn"><span className="material-symbols-outlined">refresh</span></button>
-                                        <button className="icon-action-btn"><span className="material-symbols-outlined">thumb_down</span></button>
+                                    {msg.role === 'user' && (
+                                        <div className="message-avatar user-avatar-img">
+                                            U
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+
+                            {loading && (
+                                <div className="message-row ai-row">
+                                    <div className="message-avatar ai-avatar-img">
+                                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>smart_toy</span>
+                                    </div>
+                                    <div className="message-bubble ai-bubble">
+                                        <span className="typing-indicator">Typing...</span>
                                     </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         {/* Input Area */}
                         <div className="chat-input-section">
                             <div className="suggested-prompts-row">
-                                <button className="suggested-prompt-btn">Compare with last year's contracts</button>
-                                <button className="suggested-prompt-btn">Generate executive summary</button>
+                                {suggestedPrompts.map((prompt, idx) => (
+                                    <button
+                                        key={idx}
+                                        className="suggested-prompt"
+                                        onClick={() => setInput(prompt)}
+                                    >
+                                        {prompt}
+                                    </button>
+                                ))}
                             </div>
 
                             <div className="chat-input-wrapper">
-                                <button className="attach-btn"><span className="material-symbols-outlined">attach_file</span></button>
-                                <input type="text" placeholder="Ask anything about this data room..." className="chat-input" />
-                                <button className="send-btn"><span className="material-symbols-outlined">send</span></button>
-                            </div>
-                            <div className="disclaimer">
-                                AI can make mistakes. Verify critical information against source documents.
+                                <button
+                                    className="upload-icon-btn"
+                                    onClick={() => fileInputRef.current.click()}
+                                    disabled={uploadingFile}
+                                    title="Upload Document"
+                                >
+                                    {uploadingFile ? (
+                                        <span className="material-symbols-outlined spinning">sync</span>
+                                    ) : (
+                                        <span className="material-symbols-outlined">attach_file</span>
+                                    )}
+                                </button>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    style={{ display: 'none' }}
+                                    onChange={handleFileUpload}
+                                />
+
+                                <input
+                                    type="text"
+                                    placeholder="Ask anything about this data room..."
+                                    className="chat-input"
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                                />
+                                <button
+                                    className="send-btn"
+                                    onClick={handleSend}
+                                    disabled={loading || !input.trim()}
+                                >
+                                    <span className="material-symbols-outlined">send</span>
+                                </button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Right Panel */}
-                    <aside className="ai-context-panel">
-
-                        {/* Suggested Questions */}
-                        <div className="context-section">
-                            <div className="context-header">
-                                <span className="material-symbols-outlined icon-blue">lightbulb</span>
-                                <h3>Suggested Questions</h3>
+                    {/* Right Panel: Chat History */}
+                    <aside className="ai-context-panel chat-history-panel">
+                        <div className="context-header" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span className="material-symbols-outlined">history</span>
+                                <h4>Previous Chats</h4>
                             </div>
-                            <ul className="suggested-questions-list">
-                                <li>
-                                    <span className="material-symbols-outlined">subdirectory_arrow_right</span>
-                                    <span>Summarize the EBITDA adjustments for FY2023.</span>
-                                </li>
-                                <li>
-                                    <span className="material-symbols-outlined">subdirectory_arrow_right</span>
-                                    <span>List all employees with change-of-control provisions.</span>
-                                </li>
-                                <li>
-                                    <span className="material-symbols-outlined">subdirectory_arrow_right</span>
-                                    <span>Show the org chart for the engineering department.</span>
-                                </li>
-                            </ul>
+                            <button className="new-chat-btn-small" onClick={startNewChat} title="New Chat">
+                                <span className="material-symbols-outlined">add</span>
+                            </button>
                         </div>
-
-                        {/* Active References */}
-                        <div className="context-section">
-                            <div className="context-header">
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span className="material-symbols-outlined icon-grey">description</span>
-                                    <h3>Active References</h3>
+                        <div className="chat-session-list">
+                            {chatSessions.length === 0 && (
+                                <div className="empty-sessions">No previous chats</div>
+                            )}
+                            {chatSessions.map(session => (
+                                <div
+                                    key={session.id}
+                                    className={`chat-session-item ${session.id === activeSessionId ? 'active' : ''}`}
+                                    onClick={() => setActiveSessionId(session.id)}
+                                >
+                                    <span className="material-symbols-outlined session-icon">chat_bubble_outline</span>
+                                    <span className="session-title">{session.title}</span>
                                 </div>
-                                <span className="files-count">2 files</span>
-                            </div>
-                            <div className="reference-cards">
-                                <div className="ref-card">
-                                    <div className="ref-icon-bg"><span className="material-symbols-outlined pdf-icon-lg">picture_as_pdf</span></div>
-                                    <div className="ref-info">
-                                        <div className="ref-name">Supplier_Contract_A.pdf</div>
-                                        <div className="ref-meta">LEGAL • 2.4 MB</div>
-                                        <div className="ref-desc">Contains standard terms, termination clauses, and liability caps referenced in section 4.1.</div>
-                                    </div>
-                                </div>
-                                <div className="ref-card">
-                                    <div className="ref-icon-bg"><span className="material-symbols-outlined pdf-icon-lg">picture_as_pdf</span></div>
-                                    <div className="ref-info">
-                                        <div className="ref-name">Vendor_Agreement_v2.pdf</div>
-                                        <div className="ref-meta">PROCUREMENT • 1.8 MB</div>
-                                    </div>
-                                </div>
-                            </div>
+                            ))}
                         </div>
-
-                        {/* Session History */}
-                        <div className="context-section">
-                            <div className="context-header">
-                                <span className="material-symbols-outlined icon-grey">history</span>
-                                <h3>Session History</h3>
-                            </div>
-
-                            <div className="history-group">
-                                <div className="history-date">TODAY</div>
-                                <div className="history-item active">
-                                    <div className="history-title">Supplier Contracts Risk...</div>
-                                    <div className="history-time">10:24 AM</div>
-                                </div>
-                                <div className="history-item">
-                                    <div className="history-title">Q3 Revenue Breakdown</div>
-                                    <div className="history-time">09:15 AM</div>
-                                </div>
-                            </div>
-
-                            <div className="history-group">
-                                <div className="history-date">YESTERDAY</div>
-                                <div className="history-item">
-                                    <div className="history-title">Competitor Analysis Report</div>
-                                    <div className="history-time">4:30 PM</div>
-                                </div>
-                                <div className="history-item">
-                                    <div className="history-title">Patent Portfolio Overview</div>
-                                    <div className="history-time">1:15 PM</div>
-                                </div>
-                            </div>
-                        </div>
-
                     </aside>
                 </div>
             </div>

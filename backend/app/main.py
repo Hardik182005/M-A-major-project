@@ -7,10 +7,17 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from app.config import settings
 from app.db import Base, engine
 from app.models import User, Project, ProjectMember, Document, AuditEvent, RefreshToken  # noqa: F401
+from app.models.processing import (
+    ProcessingJob, DocumentText, PIIEntity, DocumentClassification,
+    DocumentStructured, Finding, DocumentChunk,
+)  # noqa: F401
 from app.auth.routes import router as auth_router
 from app.routers.projects import router as projects_router
 from app.routers.documents import router as documents_router
 from app.routers.audit import router as audit_router
+from app.routers.processing import router as processing_router
+from app.routers.ai_assistant import router as ai_assistant_router
+from app.routers.reports import router as reports_router
 
 # ── Structured Logging ───────────────────────────────────
 logging.basicConfig(
@@ -63,6 +70,9 @@ app.include_router(auth_router)
 app.include_router(projects_router)
 app.include_router(documents_router)
 app.include_router(audit_router)
+app.include_router(processing_router)
+app.include_router(ai_assistant_router)
+app.include_router(reports_router)
 
 
 @app.get("/", tags=["Health"])
@@ -73,3 +83,5 @@ def home():
         "status": "running",
         "storage_provider": settings.STORAGE_PROVIDER,
     }
+
+# touch

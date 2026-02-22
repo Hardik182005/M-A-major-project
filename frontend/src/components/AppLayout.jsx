@@ -58,8 +58,8 @@ export default function AppLayout({ children, selectedProject, onSelectProject }
     const navItems = [
         { to: "/dashboard", icon: "dashboard", label: "Dashboard" },
         { to: "/documents", icon: "folder", label: "Documents" },
-        { to: "/processing", icon: "settings_suggest", label: "Processing" },
         { to: "/analysis", icon: "assignment_late", label: "Analysis" },
+        { to: "/processing", icon: "settings_suggest", label: "Processing" },
         { to: "/reports", icon: "bar_chart", label: "Reports" },
         { to: "/audit", icon: "history", label: "Audit Trail" },
         { to: "/ai-assistant", icon: "smart_toy", label: "AI Assistant" },
@@ -89,7 +89,23 @@ export default function AppLayout({ children, selectedProject, onSelectProject }
                 <div className="sidebar-footer">
                     <div style={{ padding: '0 24px 24px 24px' }}>
                         <button
-                            onClick={() => navigate('/dashboard')}
+                            onClick={async () => {
+                                const newName = window.prompt("Enter new project name:");
+                                if (newName && newName.trim()) {
+                                    try {
+                                        const res = await api.post('/projects', {
+                                            name: newName.trim(),
+                                            description: "New project created by user"
+                                        });
+                                        const newProj = { id: res.data.project_id, name: res.data.name };
+                                        setProjects([...projects, newProj]);
+                                        onSelectProject(newProj);
+                                        navigate('/dashboard');
+                                    } catch (err) {
+                                        alert("Failed to create project.");
+                                    }
+                                }
+                            }}
                             style={{ width: '100%', background: 'transparent', border: '1px solid #3F3F46', color: 'white', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, transition: 'background 0.2s' }}
                             onMouseOver={(e) => e.target.style.background = '#27272A'}
                             onMouseOut={(e) => e.target.style.background = 'transparent'}
