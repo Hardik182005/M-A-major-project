@@ -451,6 +451,13 @@ class PipelineWorker:
             # Save findings
             for finding_data in findings_data:
                 # Sanitize from small LLM hallucinations
+                confidence = float(finding_data.get("confidence", 0.0)) if isinstance(finding_data.get("confidence"), (int, float)) else 0.5
+                
+                # Strict threshold: Only accept highly confident findings to improve AI Accuracy
+                if confidence < 0.65:
+                    logger.info(f"Discarded finding due to low confidence ({confidence}): {finding_data.get('category')}")
+                    continue
+
                 cat = str(finding_data.get("category", "RISK"))[:50].upper()
                 typ = str(finding_data.get("type", "UNKNOWN"))[:100]
                 sev = str(finding_data.get("severity", "MEDIUM"))[:20].upper()
@@ -465,7 +472,7 @@ class PipelineWorker:
                     description=desc,
                     evidence_page=finding_data.get("evidence_page"),
                     evidence_quote=str(finding_data.get("evidence_quote", ""))[:1000] if finding_data.get("evidence_quote") else None,
-                    confidence=float(finding_data.get("confidence", 0.0)) if isinstance(finding_data.get("confidence"), (int, float)) else 0.5,
+                    confidence=confidence,
                 )
                 self.db.add(finding)
                 

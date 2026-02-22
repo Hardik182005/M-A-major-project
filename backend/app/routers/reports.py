@@ -253,18 +253,25 @@ def generate_executive_summary(project, findings, documents, use_llm=True):
     for idx, f in enumerate(medium_severity[:3]):
         findings_context += f"- Medium Risk ({f.category}): {f.description[:100]}\n"
         
-    prompt = f"""You are an expert M&A legal and financial advisor. Write a cohesive, professional executive due diligence summary (max 3-4 paragraphs) for project '{project.name}'.
+    prompt = f"""You are a top-tier Wall Street M&A Partner. Write a cohesive, extremely accurate, and professional executive due diligence summary (max 3 paragraphs) for Project '{project.name}'.
 
-Stats:
+Data Room Stats:
 - Documents processed: {len(documents)}
-- Total findings: {len(findings)}
-- Critical/High severity: {len(high_severity)}
-- Medium severity: {len(medium_severity)}
+- Total risks flagged: {len(findings)}
+- Critical/High severity gaps: {len(high_severity)}
+- Medium severity issues: {len(medium_severity)}
 
-Key Findings:
+Verified Major Findings Context:
 {findings_context}
 
-Provide a well-written, institutional-grade executive summary highlighting the primary risks and overall assessment. Do not use filler introductions. Start directly with the summary."""
+INSTRUCTIONS for maximum accuracy:
+1. Do not use filler introductions or generic platitudes.
+2. Formulate a definitive, data-driven assessment.
+3. Weigh the High/Critical severity issues heavily.
+4. If Critical risks exist, state explicitly that the deal faces material contingencies.
+5. If no major risks exist, state the target presents clean operational health in the processed scope.
+
+Begin Executive Summary:"""
 
     try:
         from app.config import settings

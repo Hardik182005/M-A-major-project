@@ -192,26 +192,30 @@ PII Detection:"""
         """
         model = settings.OLLAMA_ANALYSIS_MODEL
         
-        system_prompt = f"""You are a document analysis expert. Analyze the document and identify key findings, risks, trends, and anomalies.
-The document type is: {doc_type}
+        system_prompt = f"""You are a senior M&A Due Diligence Analyst evaluating a {doc_type} document for potential acquisition risks.
+Analyze the document with high scrutiny and identify core findings, massive liabilities, intellectual property issues, compliance gaps, anomalies, and structural risks.
 
 Return ONLY valid JSON with this exact structure:
 {{
     "findings": [
         {{
-            "category": "LEGAL|FINANCIAL|COMPLIANCE|RISK|ANOMALY|ADVICE|TREND",
-            "type": "MISSING_CLAUSE|DUPLICATE_INVOICE|UNUSUAL_PATTERN|STRATEGIC_ADVICE|TREND_ANALYSIS",
+            "category": "LEGAL|FINANCIAL|COMPLIANCE|RISK|ANOMALY|ADVICE|TREND|IP_ISSUE",
+            "type": "MISSING_CLAUSE|CHANGE_OF_CONTROL|LITIGATION_RISK|UNUSUAL_PATTERN|STRATEGIC_ADVICE|TREND_ANALYSIS|PENALTY",
             "severity": "LOW|MEDIUM|HIGH|CRITICAL",
-            "description": "Clear description of the finding, trend, or advice",
-            "evidence_page": 5,
-            "evidence_quote": "Exact quote from document highlighting this",
-            "confidence": 0.75
+            "description": "Clear description of the finding, trend, or advice. Explain WHY it matters to the acquisition.",
+            "evidence_page": 1,
+            "evidence_quote": "Exact quote from document highlighting this risk",
+            "confidence": 0.85
         }}
     ],
-    "risk_score_delta": 5
+    "risk_score_delta": 15
 }}
 
-Keep the analysis sharp and identifying specific risks for {doc_type}. If no risks found, return empty findings list."""
+Strict Rules:
+- If a finding is "CRITICAL", it must be a dealbreaker or major liability.
+- Only include findings with a confidence > 0.6.
+- Keep the analysis extremely sharp and identifying specific risks for {doc_type}. 
+- If no risks found, return empty findings list."""
 
         context_parts = [f"Document type: {doc_type}\n\nDocument content:\n{text[:10000]}"]
         
