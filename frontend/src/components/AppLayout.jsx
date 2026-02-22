@@ -156,8 +156,38 @@ export default function AppLayout({ children, selectedProject, onSelectProject }
                         <button className="btn-icon">
                             <span className="material-symbols-outlined">notifications</span>
                         </button>
-                        <div className="user-avatar" style={{ width: 32, height: 32, fontSize: 13, background: '#1D4ED8' }}>
-                            {user.name.split(' ').map(n => n.charAt(0)).join('').toUpperCase().substring(0, 2)}
+
+                        <div style={{ position: 'relative' }}>
+                            <div
+                                className="user-avatar"
+                                style={{ width: 32, height: 32, fontSize: 13, background: '#1D4ED8', cursor: 'pointer' }}
+                                onClick={() => document.getElementById('settings-dropdown')?.classList.toggle('show')}
+                            >
+                                {user.name.split(' ').map(n => n.charAt(0)).join('').toUpperCase().substring(0, 2)}
+                            </div>
+
+                            {/* Settings Dropdown */}
+                            <div id="settings-dropdown" className="settings-dropdown">
+                                <div className="settings-header">
+                                    <strong>{user.name}</strong>
+                                    <span>{user.email || 'user@mergermind.ai'}</span>
+                                </div>
+                                <div className="settings-menu-items">
+                                    <button onClick={() => navigate('/settings')}>
+                                        <span className="material-symbols-outlined">person</span> Profile Settings
+                                    </button>
+                                    <button onClick={() => navigate('/settings/preferences')}>
+                                        <span className="material-symbols-outlined">tune</span> Preferences
+                                    </button>
+                                    <button onClick={() => navigate('/settings/billing')}>
+                                        <span className="material-symbols-outlined">credit_card</span> Billing
+                                    </button>
+                                    <div className="settings-divider"></div>
+                                    <button onClick={handleLogout} className="logout-btn-dropdown">
+                                        <span className="material-symbols-outlined">logout</span> Log Out
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </header>
@@ -166,6 +196,7 @@ export default function AppLayout({ children, selectedProject, onSelectProject }
                     {children}
                 </main>
             </div>
+
         </div>
     );
 }

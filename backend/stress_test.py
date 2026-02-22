@@ -38,11 +38,31 @@ except KeyError:
     project_id = res.json()["id"]
 print(f"Project ID: {project_id}")
 
-print("4. Uploading 35 documents...")
+print("4. Uploading 100 documents...")
 doc_ids = []
-for i in range(1, 36):
-    filename = f"dummy_contract_{i}.txt"
-    content = f"This is a dummy contract number {i}. The total liability is ${i*1000}. Counterparty is Test Corp {i}. Name: John Doe {i}. PAN: ABCDE1234F."
+import random
+
+for i in range(1, 101):
+    filename = f"MA_Due_Diligence_{i}.txt"
+    # Create some variation and M&A risks
+    amount = i * 50000
+    counterparty = f"Target Corp {i}"
+    risk_level = random.choice(["Low", "Medium", "High", "Critical"])
+    
+    content = f"DUE DILIGENCE MEMO - Contract {i}\n"
+    content += f"Counterparty: {counterparty}\n"
+    content += f"Total Liability: ${amount}\n"
+    content += f"Status: Active\n"
+    content += f"Assigned Analyst: Jane Doe\n"
+    
+    if risk_level == "Critical":
+        content += "RISK ALERT: Pending litigation identified regarding intellectual property infringement. High risk of operational disruption.\n"
+        content += "Sensitive PII: CEO John Smith, SSN 999-00-1111, Phone: 555-010-9999.\n"
+    elif risk_level == "High":
+        content += "RISK ALERT: Unauthorized change of control clause found. May trigger huge penalties upon acquisition.\n"
+    else:
+        content += "No major risks identified. Standard commercial terms apply.\n"
+        
     with open(filename, "w") as f:
         f.write(content)
     
@@ -54,21 +74,20 @@ for i in range(1, 36):
         )
     if res.status_code == 200:
         doc_ids.append(res.json()["document"]["id"])
+        print(f"Uploaded {i}/100")
     else:
         print(f"Failed upload {i}:", res.status_code, res.text)
     
     os.remove(filename)
+    time.sleep(0.5)
 
 print(f"Uploaded {len(doc_ids)} documents. Waiting for pipeline to start processing...")
-time.sleep(5) # Let pipeline start
+time.sleep(15) # 100 docs take longer to process
 
 print("\n--- AI Chat Stress Test ---")
 questions = [
-    "Hi there!",
-    "What is the total liability across all contracts?",
-    "Summarize the documents",
-    "Are there any specific counterparties mentioned?",
-    "Did you find any PII in the documents? Make it funny."
+    "Hi",
+    "Please generate a comprehensive M&A report covering Trend analysis, Comparative analysis, predictive analysis, and your verdict on whether it is safe to acquire based on liability and risks.",
 ]
 
 for i, q in enumerate(questions):

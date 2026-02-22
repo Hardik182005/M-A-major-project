@@ -198,3 +198,97 @@
     padding: 24px 32px 64px 32px;
     /* Bottom padding for scrolling */
 }
+
+/* Settings Dropdown */
+.settings-dropdown {
+    position: absolute;
+    top: 45px;
+    right: 0;
+    width: 240px;
+    background-color: #ffffff;
+    border: 1px solid #E4E4E7;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    animation: fadeIn 0.2s ease;
+}
+
+.settings-dropdown.show {
+    display: flex;
+}
+
+.settings-header {
+    padding: 16px;
+    background-color: #F4F4F5;
+    border-bottom: 1px solid #E4E4E7;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.settings-header strong {
+    color: #18181B;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.settings-header span {
+    color: #71717A;
+    font-size: 12px;
+}
+
+.settings-menu-items {
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-menu-items button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    color: #3F3F46;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.settings-menu-items button .material-symbols-outlined {
+    font-size: 18px;
+    color: #71717A;
+    transition: color 0.2s;
+}
+
+.settings-menu-items button:hover {
+    background-color: #F4F4F5;
+}
+
+.settings-menu-items button:hover .material-symbols-outlined {
+    color: #18181B;
+}
+
+.settings-divider {
+    height: 1px;
+    background-color: #E4E4E7;
+    margin: 8px 0;
+}
+
+.logout-btn-dropdown {
+    color: #ef4444 !important;
+}
+
+.logout-btn-dropdown .material-symbols-outlined {
+    color: #ef4444 !important;
+}
+
+.logout-btn-dropdown:hover {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+}
