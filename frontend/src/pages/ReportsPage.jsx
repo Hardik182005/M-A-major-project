@@ -197,13 +197,10 @@ export default function ReportsPage() {
                                         </span>
                                     </div>
                                     <div className="preview-toolbar-right">
-                                        <button className="toolbar-btn">
-                                            <span className="material-symbols-outlined">share</span> SHARE
-                                        </button>
-                                        <button className="toolbar-btn">
+                                        <button className="toolbar-btn" onClick={() => window.print()}>
                                             <span className="material-symbols-outlined">download</span> PDF
                                         </button>
-                                        <button className="toolbar-btn">
+                                        <button className="toolbar-btn" onClick={() => window.print()}>
                                             <span className="material-symbols-outlined">print</span> PRINT
                                         </button>
                                     </div>
@@ -271,7 +268,7 @@ export default function ReportsPage() {
 
                                             <button
                                                 className="view-full-report-btn"
-                                                onClick={() => navigate('/findings')}
+                                                onClick={() => navigate('/analysis')}
                                             >
                                                 VIEW FULL ANALYSIS
                                             </button>

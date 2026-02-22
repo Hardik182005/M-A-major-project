@@ -292,3 +292,36 @@
 .logout-btn-dropdown:hover {
     background-color: rgba(239, 68, 68, 0.1) !important;
 }
+
+/* Print Styles */
+@media print {
+
+    .sidebar,
+    .topbar,
+    .reports-header-section,
+    .reports-table-card,
+    .preview-toolbar,
+    .view-full-report-btn {
+        display: none !important;
+    }
+
+    .main-wrapper,
+    .main-content {
+        margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+        background: white !important;
+    }
+
+    .report-preview-card {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    body {
+        background: white !important;
+    }
+}

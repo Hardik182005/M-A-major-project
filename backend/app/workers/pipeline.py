@@ -451,10 +451,13 @@ class PipelineWorker:
             # Save findings
             for finding_data in findings_data:
                 # Sanitize from small LLM hallucinations
-                confidence = float(finding_data.get("confidence", 0.0)) if isinstance(finding_data.get("confidence"), (int, float)) else 0.5
+                try:
+                    confidence = float(finding_data.get("confidence", 0.5))
+                except (ValueError, TypeError):
+                    confidence = 0.5
                 
-                # Strict threshold: Only accept highly confident findings to improve AI Accuracy
-                if confidence < 0.65:
+                # Moderate threshold: Filter very poor hallucinations
+                if confidence < 0.4:
                     logger.info(f"Discarded finding due to low confidence ({confidence}): {finding_data.get('category')}")
                     continue
 

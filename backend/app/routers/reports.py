@@ -303,19 +303,33 @@ Begin Executive Summary:"""
 
 def calculate_category_risk(findings, category):
     """Calculate risk percentage for a category"""
-    category_findings = [f for f in findings if f.category == category]
-    if not category_findings:
-        return 0
-    
-    # Weight by severity
     score = 0
-    for f in category_findings:
-        if f.severity == 'HIGH':
-            score += 30
-        elif f.severity == 'MEDIUM':
-            score += 15
+    for f in findings:
+        cat = f.category.upper() if f.category else ""
+        
+        # Map some AI categories to the fundamental 4 buckets
+        if category == "OPERATIONAL" and cat in ["OPERATIONAL", "RISK", "ANOMALY", "TREND"]:
+            match = True
+        elif category == "LEGAL" and cat in ["LEGAL", "IP_ISSUE"]:
+            match = True
+        elif category == "FINANCIAL" and cat == "FINANCIAL":
+            match = True
+        elif category == "COMPLIANCE" and cat == "COMPLIANCE":
+            match = True
+        elif category == cat:
+            match = True
         else:
-            score += 5
+            match = False
+            
+        if match:
+            if f.severity == 'CRITICAL':
+                score += 50
+            elif f.severity == 'HIGH':
+                score += 30
+            elif f.severity == 'MEDIUM':
+                score += 15
+            else:
+                score += 5
     
     return min(100, score)
 

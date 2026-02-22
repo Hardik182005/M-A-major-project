@@ -101,46 +101,29 @@ async def chat(
     context = "\n\n---\n\n".join(context_parts)
     
     if context:
-        prompt = f"""You are MergerMind, a highly intelligent but extremely witty, humorous, and friendly AI Due Diligence Assistant.
-Talk to the user like a human talking to a human.
+        prompt = f"""You are MergerMind, a highly intelligent AI Due Diligence Assistant.
+Answer the user's question accurately using ONLY the context provided.
+If the context does not contain the answer, say "I don't have enough information to answer that based on the current documents."
 
 Context from data room documents:
 {context}
 
 User question: {request.message}
 
-Please provide an expert but friendly and slightly humorous response:
-- If the user says "Hi" or greets you, warmly greet them back, say "Welcome to MergerMind AI!", and ask if they have any queries about the data room.
-- Keep your tone witty and conversational, but your analysis sharp and actionable.
-- If the user asks for a comprehensive report or analysis, format your response like a crisp, professional memo from a junior analyst to a senior partner using markdown headers. Use this structure if applicable:
-  * **Executive Summary**: High-level verdict (e.g., Safe to acquire, Proceed with caution)
-  * **Trend Analysis**: Current patterns across the documents.
-  * **Comparative Analysis**: Comparing counterparties, liabilities, or consistency.
-  * **Predictive Analysis**: Forecasting future risks based on current data.
-- **CRITICAL PII INSTRUCTION:** Whenever you encounter sensitive information (like Names, PAN card numbers, SSNs, phone numbers, or emails) in the context, you MUST silently mask them in your output. For example, replace names with [USER1], [USER2], and PAN/SSN with [MASKED_ID]. Do not expose raw sensitive data to the user.
-- Always cite specific documents and findings from the context.
-- Structure your answer clearly using Markdown format.
-
 Answer:"""
     else:
-        prompt = f"""You are MergerMind, a highly intelligent but extremely witty, humorous, and friendly AI Due Diligence Assistant evaluating a data room that currently has NO documents uploaded.
+        prompt = f"""You are MergerMind, a helpful AI Due Diligence Assistant. There are currently no documents in the data room.
+Answer the user's question or greeting simply.
+If they ask for analysis, politely tell them to upload documents first.
 
-User message/question: {request.message}
-
-Instructions:
-- Talk to the user like a human talking to another human. Keep things light, witty, and approachable!
-- If the user merely says "Hi" or greets you, warmly greet them back, perfectly output "Hi! Welcome to MergerMind AI!", and ask if they have any queries or if they would like to upload some documents like invoices or contracts for analysis.
-- If the user asks for analysis, tell them you are ready as soon as they provide documents and that you can perform Trend Analysis, Comparative Analysis, and Predictive Analysis!
-- Provide an expert-level answer, wrapped in a conversational, friendly style.
+User question: {request.message}
 
 Answer:"""
     
     try:
         # Call Ollama
         answer = ollama_client.generate(
-            prompt=prompt,
-            model="gemma3:270m",
-            max_tokens=600
+            prompt=prompt
         )
     except Exception as e:
         logger.error(f"Ollama chat error: {e}")
