@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
 import api, { getProjectReports, generateReport, getReportSummary } from '../api';
 import './ReportsPage.css';
 
 export default function ReportsPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const [selectedProject, setSelectedProject] = useState(null);
     const [reports, setReports] = useState([]);
     const [selectedReport, setSelectedReport] = useState(null);
@@ -41,7 +42,7 @@ export default function ReportsPage() {
 
     const handleGenerateReport = async () => {
         if (!selectedProject) return;
-        
+
         setGenerating(true);
         try {
             const res = await generateReport(selectedProject.id);
@@ -99,8 +100,8 @@ export default function ReportsPage() {
                         <h1>Reports</h1>
                         <p>Institutional-grade summaries and due diligence outputs.</p>
                     </div>
-                    <button 
-                        className="generate-new-btn" 
+                    <button
+                        className="generate-new-btn"
                         onClick={handleGenerateReport}
                         disabled={generating}
                     >
@@ -235,11 +236,11 @@ export default function ReportsPage() {
                                         <div className="verdict-container">
                                             <div className={`verdict-banner ${selectedReport.risk_level?.toLowerCase()}`}>
                                                 <span className="material-symbols-outlined">
-                                                    {selectedReport.risk_level === 'HIGH' ? 'warning' : 
-                                                     selectedReport.risk_level === 'MEDIUM' ? 'info' : 'check_circle'}
+                                                    {selectedReport.risk_level === 'HIGH' ? 'warning' :
+                                                        selectedReport.risk_level === 'MEDIUM' ? 'info' : 'check_circle'}
                                                 </span>
                                                 {selectedReport.risk_level === 'HIGH' ? 'HIGH RISK' :
-                                                 selectedReport.risk_level === 'MEDIUM' ? 'PROCEED WITH CAUTION' : 'FAVORABLE'}
+                                                    selectedReport.risk_level === 'MEDIUM' ? 'PROCEED WITH CAUTION' : 'FAVORABLE'}
                                             </div>
                                             <div className="confidence-label">
                                                 RISK SCORE: {selectedReport.risk_score || 0}%
@@ -257,18 +258,18 @@ export default function ReportsPage() {
                                                         <span>{value}%</span>
                                                     </div>
                                                     <div className="risk-bar-track">
-                                                        <div 
-                                                            className="risk-bar-fill" 
-                                                            style={{ 
-                                                                width: `${value}%`, 
-                                                                backgroundColor: value > 60 ? '#09090B' : value > 30 ? '#71717A' : '#A1A1AA' 
+                                                        <div
+                                                            className="risk-bar-fill"
+                                                            style={{
+                                                                width: `${value}%`,
+                                                                backgroundColor: value > 60 ? '#09090B' : value > 30 ? '#71717A' : '#A1A1AA'
                                                             }}
                                                         ></div>
                                                     </div>
                                                 </div>
                                             ))}
 
-                                            <button 
+                                            <button
                                                 className="view-full-report-btn"
                                                 onClick={() => navigate('/findings')}
                                             >
