@@ -419,7 +419,10 @@ export default function DocumentViewerPage() {
                     </div>
 
                     <div className="insights-footer">
-                        <button className="generate-report-btn">
+                        <button
+                            className="generate-report-btn"
+                            onClick={() => navigate('/reports', { state: { projectId: document.projectId || document.project_id } })}
+                        >
                             <span className="material-symbols-outlined">security</span>
                             Download Risk Assessment
                         </button>

@@ -211,15 +211,7 @@ Return ONLY valid JSON with this exact structure:
     "risk_score_delta": 5
 }}
 
-Consider:
-- Legal: missing clauses, unusual terms, termination conditions
-- Financial: duplicate invoices, unusual amounts, missing details
-- Compliance: missing signatures, incomplete forms, regulatory issues
-- Risk: high-value transactions, unusual parties, suspicious patterns
-- Anomaly: inconsistencies, duplicates, gaps
-- Advice/Trends: Highlight specific parts of the document, generate actionable advice, and specify clear trends from the data.
-
-Provide actionable insights based on the document type."""
+Keep the analysis sharp and identifying specific risks for {doc_type}. If no risks found, return empty findings list."""
 
         context_parts = [f"Document type: {doc_type}\n\nDocument content:\n{text[:10000]}"]
         

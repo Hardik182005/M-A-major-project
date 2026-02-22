@@ -267,10 +267,11 @@ Key Findings:
 Provide a well-written, institutional-grade executive summary highlighting the primary risks and overall assessment. Do not use filler introductions. Start directly with the summary."""
 
     try:
+        from app.config import settings
         # Call Ollama for dynamic summary generation
         summary = ollama_client.generate(
             prompt=prompt,
-            model="qwen2.5:3b",
+            model=settings.OLLAMA_ANALYSIS_MODEL,
             max_tokens=600
         )
         if not summary or summary.startswith("Error:"):
