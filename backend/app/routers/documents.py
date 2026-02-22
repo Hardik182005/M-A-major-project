@@ -19,7 +19,7 @@ from app.models.project_member import ProjectMember
 from app.models.document import Document
 from app.models.processing import ProcessingJob
 from app.services.audit import log_audit
-from app.workers.pipeline import pipeline_worker
+from app.workers.pipeline import process_document_task
 
 router = APIRouter(tags=["Documents"])
 
@@ -210,7 +210,7 @@ def complete_upload(
         db.refresh(job)
         
         # Run in background
-        background_tasks.add_task(pipeline_worker.process_document, job.id)
+        background_tasks.add_task(process_document_task, job.id)
 
     return {
         "msg": "Upload complete",
@@ -341,7 +341,7 @@ def upload_document(
         db.refresh(job)
         
         # Run in background
-        background_tasks.add_task(pipeline_worker.process_document, job.id)
+        background_tasks.add_task(process_document_task, job.id)
 
     return {
         "msg": "Document uploaded",

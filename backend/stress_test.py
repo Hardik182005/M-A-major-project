@@ -72,8 +72,8 @@ for i in range(1, 101):
             files={"file": (filename, f, "text/plain")},
             headers=headers
         )
-    if res.status_code == 200:
-        doc_ids.append(res.json()["document"]["id"])
+    if res.status_code in [200, 201]:
+        doc_ids.append(res.json()["document_id"])
         print(f"Uploaded {i}/100")
     else:
         print(f"Failed upload {i}:", res.status_code, res.text)

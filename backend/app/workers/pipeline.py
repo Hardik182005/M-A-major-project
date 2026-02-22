@@ -563,5 +563,11 @@ class PipelineWorker:
             return False
 
 
-# Singleton instance
-pipeline_worker = PipelineWorker()
+def process_document_task(job_id: int):
+    """
+    Standalone function to process a document.
+    Ensures that each background task gets its own PipelineWorker instance,
+    providing full database session isolation per thread.
+    """
+    worker = PipelineWorker()
+    return worker.process_document(job_id)

@@ -6,7 +6,7 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 from app.db import SessionLocal
 from app.models.document import Document
-from app.workers.pipeline import pipeline_worker
+from app.workers.pipeline import process_document_task
 from app.models.processing import ProcessingJob, Finding, DocumentText
 
 def reprocess_all():
@@ -35,7 +35,7 @@ def reprocess_all():
         db.refresh(job)
         
         # Run pipeline
-        pipeline_worker.process_document(job.id)
+        process_document_task(job.id)
         
     print("Done")
 

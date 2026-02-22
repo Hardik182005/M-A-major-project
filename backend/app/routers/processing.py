@@ -23,7 +23,7 @@ from app.models.processing import (
     DocumentStructured,
     Finding,
 )
-from app.workers.pipeline import pipeline_worker
+from app.workers.pipeline import process_document_task
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +138,7 @@ def process_document(
     db.refresh(job)
     
     # Run in background
-    background_tasks.add_task(pipeline_worker.process_document, job.id)
+    background_tasks.add_task(process_document_task, job.id)
     
     return {
         "msg": "Processing started",

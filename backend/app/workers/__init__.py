@@ -1,1 +1,1 @@
-from app.workers.pipeline import pipeline_worker  # noqa: F401
+from app.workers.pipeline import process_document_task  # noqa: F401
