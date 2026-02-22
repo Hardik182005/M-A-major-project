@@ -252,6 +252,30 @@ def get_me(current_user: User = Depends(get_current_user)):
     }
 
 
+class UpdateProfileRequest(BaseModel):
+    name: str
+
+@router.put("/me")
+def update_me(
+    data: UpdateProfileRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update current user profile (name)."""
+    current_user.name = data.name
+    db.commit()
+    db.refresh(current_user)
+    return {
+        "msg": "Profile updated",
+        "user": {
+            "id": current_user.id,
+            "name": current_user.name,
+            "email": current_user.email,
+            "is_active": current_user.is_active,
+        }
+    }
+
+
 # ── Google OAuth ─────────────────────────────────────────
 class GoogleAuthRequest(BaseModel):
     credential: str  # Google access token from frontend

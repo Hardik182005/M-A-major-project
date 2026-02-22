@@ -12,6 +12,7 @@ import AnalysisPage from './pages/AnalysisPage';
 import ReportsPage from './pages/ReportsPage';
 import AuditPage from './pages/AuditPage';
 import AIAssistantPage from './pages/AIAssistantPage';
+import SettingsPage from './pages/SettingsPage';
 
 export default function App() {
   return (
@@ -30,6 +31,9 @@ export default function App() {
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/audit" element={<AuditPage />} />
         <Route path="/ai-assistant" element={<AIAssistantPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings/preferences" element={<SettingsPage />} />
+        <Route path="/settings/billing" element={<SettingsPage />} />
       </Routes>
     </BrowserRouter>
   );

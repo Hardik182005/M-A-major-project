@@ -1,6 +1,0 @@
-DUE DILIGENCE MEMO - Contract 41
-Counterparty: Target Corp 41
-Total Liability: $2050000
-Status: Active
-Assigned Analyst: Jane Doe
-RISK ALERT: Unauthorized change of control clause found. May trigger huge penalties upon acquisition.
