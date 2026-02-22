@@ -98,6 +98,18 @@ class PipelineWorker:
             # Complete job
             self._complete_job(job)
             
+            # Log audit event
+            from app.services.audit import log_audit
+            log_audit(
+                self.db, 
+                "AI_ANALYSIS_COMPLETE", 
+                actor_id=doc.uploaded_by,  # Attributing to the uploader as the trigger
+                project_id=doc.project_id,
+                document_id=doc.id,
+                filename=doc.filename
+            )
+            self.db.commit()
+            
             return True
             
         except Exception as e:

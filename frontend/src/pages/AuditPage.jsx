@@ -7,98 +7,78 @@ export default function AuditPage() {
     const [selectedProject, setSelectedProject] = useState(null);
     const [auditLogs, setAuditLogs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalEvents, setTotalEvents] = useState(0);
+    const limit = 20;
 
-    const generateSystemLogs = (documents) => {
-        let logs = [];
-        let idCounter = 1;
-
-        if (documents.length === 0) {
-            return [];
-        }
-
-        documents.forEach((doc) => {
-            const dt = new Date(doc.uploaded_at);
+    const parseAuditLogs = (events) => {
+        return events.map(e => {
+            const dt = new Date(e.timestamp);
             const month = dt.toLocaleString('en-US', { month: 'short' }).toUpperCase();
             const timestampFormatted = `${month} ${dt.getDate()},\n${dt.toTimeString().split(' ')[0]}`;
 
-            // Log 1: Real Upload Event
-            logs.push({
-                id: idCounter++,
-                rawDate: dt.getTime(),
-                timestamp: timestampFormatted,
-                actor: doc.uploaded_by === 3 ? "SYSTEM BOT" : `USER ${doc.uploaded_by}`,
-                role: doc.uploaded_by === 3 ? "SYSTEM" : "ANALYST",
-                avatar: doc.uploaded_by === 3 ? "S" : "U",
-                isAI: false,
-                action: "UPLOAD",
-                icon: "upload",
-                desc: <span>Uploaded <strong>{doc.filename}</strong> to Secure Vault</span>,
-                ip: "192.168.1.45"
-            });
-
-            // Log 2: Automated Scan event offset by 2 minutes
-            const scanDt = new Date(doc.uploaded_at);
-            scanDt.setMinutes(scanDt.getMinutes() + 2);
-            const scanTimestamp = `${scanDt.toLocaleString('en-US', { month: 'short' }).toUpperCase()} ${scanDt.getDate()},\n${scanDt.toTimeString().split(' ')[0]}`;
-
-            logs.push({
-                id: idCounter++,
-                rawDate: scanDt.getTime(),
-                timestamp: scanTimestamp,
-                actor: "MERGERMIND AI",
-                role: "SYSTEM AUTOMATION",
-                avatar: "smart_toy",
-                isAI: true,
-                action: "SCAN",
-                icon: "search",
-                desc: <span>Completed anomaly detection on <strong>{doc.filename}</strong></span>,
-                ip: "10.0.0.1 (SYS)"
-            });
-
-            // Log 3: Alert Event offset by 15 minutes randomly assigned
-            if (doc.id % 2 === 0) {
-                const alertDt = new Date(doc.uploaded_at);
-                alertDt.setMinutes(alertDt.getMinutes() + 15);
-                const alertTimestamp = `${alertDt.toLocaleString('en-US', { month: 'short' }).toUpperCase()} ${alertDt.getDate()},\n${alertDt.toTimeString().split(' ')[0]}`;
-
-                logs.push({
-                    id: idCounter++,
-                    rawDate: alertDt.getTime(),
-                    timestamp: alertTimestamp,
-                    actor: "MERGERMIND AI",
-                    role: "SYSTEM AUTOMATION",
-                    avatar: "smart_toy",
-                    isAI: true,
-                    action: "ALERT",
-                    icon: "warning",
-                    desc: <span>Flagged operational risk pattern in <strong>{doc.filename}</strong></span>,
-                    ip: "10.0.0.1 (SYS)"
-                });
+            let meta = {};
+            try {
+                meta = JSON.parse(e.meta_json || '{}');
+            } catch (err) {
+                console.error("JSON parse error for meta_json", err);
             }
+
+            const isAI = ["SCAN", "ALERT", "AI_ANALYSIS_COMPLETE"].includes(e.action);
+
+            let desc = "";
+            let icon = "info";
+            let actionText = e.action.replace(/_/g, ' ');
+
+            switch (e.action) {
+                case 'UPLOAD_DOCUMENT':
+                    desc = <span>Uploaded <strong>{meta.filename || 'document'}</strong> to Secure Vault</span>;
+                    icon = "upload";
+                    actionText = "UPLOAD";
+                    break;
+                case 'DOWNLOAD_DOCUMENT':
+                    desc = <span>Downloaded <strong>{meta.filename || 'document'}</strong></span>;
+                    icon = "download";
+                    actionText = "DOWNLOAD";
+                    break;
+                case 'DELETE_DOCUMENT':
+                    desc = <span>Deleted <strong>{meta.filename || 'document'}</strong></span>;
+                    icon = "delete";
+                    actionText = "DELETE";
+                    break;
+                case 'AI_ANALYSIS_COMPLETE':
+                    desc = <span>Completed AI analysis and risk assessment on <strong>{meta.filename || 'document'}</strong></span>;
+                    icon = "verified";
+                    actionText = "AI SCAN";
+                    break;
+                case 'LOCK_DOCUMENT':
+                    desc = <span>Placed legal hold on <strong>{meta.filename || 'document'}</strong></span>;
+                    icon = "lock";
+                    actionText = "LOCK";
+                    break;
+                case 'UNLOCK_DOCUMENT':
+                    desc = <span>Removed legal hold from <strong>{meta.filename || 'document'}</strong></span>;
+                    icon = "lock_open";
+                    actionText = "UNLOCK";
+                    break;
+                default:
+                    desc = <span>Performed {e.action.toLowerCase()} on resource</span>;
+                    icon = "info";
+            }
+
+            return {
+                id: e.id,
+                timestamp: timestampFormatted,
+                actor: isAI ? "MERGERMIND AI" : (meta.user_email || `User ${e.actor_id}`),
+                role: isAI ? "SYSTEM AUTOMATION" : "ANALYST",
+                avatar: isAI ? "smart_toy" : "U",
+                isAI: isAI,
+                action: actionText,
+                icon: icon,
+                desc: desc,
+                ip: e.ip_address || "N/A"
+            };
         });
-
-        // Log 4: Static specific Access Event offset from newest doc
-        if (documents.length > 0) {
-            const baseDt = new Date(documents[0].uploaded_at);
-            baseDt.setHours(baseDt.getHours() + 1);
-            logs.push({
-                id: idCounter++,
-                rawDate: baseDt.getTime(),
-                timestamp: `${baseDt.toLocaleString('en-US', { month: 'short' }).toUpperCase()} ${baseDt.getDate()},\n${baseDt.toTimeString().split(' ')[0]}`,
-                actor: "ADMINISTRATOR",
-                role: "COMPLIANCE LEAD",
-                avatar: "A",
-                isAI: false,
-                action: "ACCESS",
-                icon: "group",
-                desc: <span>Modified access rights for internal compliance review</span>,
-                ip: "172.16.254.1"
-            });
-        }
-
-        // Sort by rawDate descending (newest first)
-        logs.sort((a, b) => b.rawDate - a.rawDate);
-        return logs;
     };
 
     useEffect(() => {
@@ -107,33 +87,58 @@ export default function AuditPage() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const res = await api.get(`/projects/${selectedProject.id}/documents?limit=50`);
-                const docs = res.data.documents || [];
+                const offset = (currentPage - 1) * limit;
+                const res = await api.get(`/projects/${selectedProject.id}/audit?limit=${limit}&offset=${offset}`);
 
-                const generatedLogs = generateSystemLogs(docs);
-                setAuditLogs(generatedLogs);
+                setAuditLogs(parseAuditLogs(res.data.events || []));
+                setTotalEvents(res.data.total || 0);
             } catch (err) {
-                console.error("Failed to fetch documents for audit trail", err);
+                console.error("Failed to fetch audit trail", err);
+                setAuditLogs([]);
+                setTotalEvents(0);
             } finally {
                 setLoading(false);
             }
         };
         fetchData();
-    }, [selectedProject]);
+    }, [selectedProject, currentPage]);
 
     const getActionClass = (action) => {
-        switch (action) {
-            case 'UPLOAD': return 'action-upload';
-            case 'SCAN': return 'action-scan';
-            case 'ALERT': return 'action-alert';
-            case 'DOWNLOAD': return 'action-download';
-            case 'ACCESS': return 'action-access';
-            default: return '';
+        if (action.includes('UPLOAD')) return 'action-upload';
+        if (action.includes('AI') || action.includes('SCAN')) return 'action-scan';
+        if (action.includes('DELETE')) return 'action-alert';
+        if (action.includes('DOWNLOAD')) return 'action-download';
+        return 'action-access';
+    };
+
+    const totalPages = Math.ceil(totalEvents / limit);
+    const renderPageNumbers = () => {
+        const pages = [];
+        const maxVisible = 5;
+
+        let start = Math.max(1, currentPage - 2);
+        let end = Math.min(totalPages, start + maxVisible - 1);
+
+        if (end - start < maxVisible - 1) {
+            start = Math.max(1, end - maxVisible + 1);
         }
+
+        for (let i = start; i <= end; i++) {
+            pages.push(
+                <button
+                    key={i}
+                    className={`page-num ${currentPage === i ? 'active' : ''}`}
+                    onClick={() => setCurrentPage(i)}
+                >
+                    {i}
+                </button>
+            );
+        }
+        return pages;
     };
 
     return (
-        <AppLayout selectedProject={selectedProject} onSelectProject={setSelectedProject}>
+        <AppLayout selectedProject={selectedProject} onSelectProject={(p) => { setSelectedProject(p); setCurrentPage(1); }}>
             <div className="audit-container fade-in">
 
                 {/* Header Section */}
@@ -164,7 +169,7 @@ export default function AuditPage() {
                         </div>
                         <div className="date-picker-box">
                             <span className="material-symbols-outlined">calendar_today</span>
-                            <span>OCT 24 - OCT 31, 2023</span>
+                            <span>{new Date().toLocaleDateString()}</span>
                         </div>
                     </div>
                 </div>
@@ -186,13 +191,14 @@ export default function AuditPage() {
                             {loading ? (
                                 <tr>
                                     <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: '#A1A1AA' }}>
-                                        Loading Secure Ledger...
+                                        <span className="material-symbols-outlined spinning" style={{ marginBottom: '10px' }}>progress_activity</span>
+                                        <br />Loading Secure Ledger...
                                     </td>
                                 </tr>
                             ) : auditLogs.length === 0 ? (
                                 <tr>
                                     <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: '#A1A1AA' }}>
-                                        No audit events found. Upload a document to generate security logs.
+                                        No audit events found. Activities like uploads and AI analysis will appear here.
                                     </td>
                                 </tr>
                             ) : auditLogs.map(log => (
@@ -206,7 +212,7 @@ export default function AuditPage() {
                                             {log.isAI ? (
                                                 <div className="ai-avatar"><span className="material-symbols-outlined">{log.avatar}</span></div>
                                             ) : (
-                                                <div className="user-avatar-circle">{log.avatar}</div>
+                                                <div className="user-avatar-circle">{typeof log.avatar === 'string' && log.avatar.length === 1 ? log.avatar : 'U'}</div>
                                             )}
                                             <div className="actor-info">
                                                 <div className="actor-name">{log.actor}</div>
@@ -235,20 +241,39 @@ export default function AuditPage() {
                     </table>
 
                     {/* Pagination */}
-                    <div className="audit-pagination">
-                        <div className="page-info">
-                            SHOWING <strong>1</strong> TO <strong>{Math.min(20, auditLogs.length)}</strong> OF <strong>{auditLogs.length}</strong> EVENTS
+                    {totalPages > 1 && (
+                        <div className="audit-pagination">
+                            <div className="page-info">
+                                SHOWING <strong>{(currentPage - 1) * limit + 1}</strong> TO <strong>{Math.min(currentPage * limit, totalEvents)}</strong> OF <strong>{totalEvents}</strong> EVENTS
+                            </div>
+                            <div className="page-controls">
+                                <button
+                                    className="page-arrow"
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                >
+                                    <span className="material-symbols-outlined">chevron_left</span>
+                                </button>
+
+                                {renderPageNumbers()}
+
+                                {totalPages > 5 && currentPage < totalPages - 2 && (
+                                    <>
+                                        <span className="page-dots">...</span>
+                                        <button className="page-num" onClick={() => setCurrentPage(totalPages)}>{totalPages}</button>
+                                    </>
+                                )}
+
+                                <button
+                                    className="page-arrow"
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                >
+                                    <span className="material-symbols-outlined">chevron_right</span>
+                                </button>
+                            </div>
                         </div>
-                        <div className="page-controls">
-                            <button className="page-arrow"><span className="material-symbols-outlined">chevron_left</span></button>
-                            <button className="page-num active">1</button>
-                            <button className="page-num">2</button>
-                            <button className="page-num">3</button>
-                            <span className="page-dots">...</span>
-                            <button className="page-num">24</button>
-                            <button className="page-arrow"><span className="material-symbols-outlined">chevron_right</span></button>
-                        </div>
-                    </div>
+                    )}
                 </div>
 
             </div>
