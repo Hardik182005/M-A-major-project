@@ -221,7 +221,7 @@ def get_processing_job(
 @router.get("/documents/{doc_id}/classification", response_model=ClassificationResponse)
 def get_document_classification(
     doc_id: int,
-    member: ProjectMember = Depends(require_min_role("VIEWER")),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -234,7 +234,7 @@ def get_document_classification(
     # Verify access
     member = db.query(ProjectMember).filter(
         ProjectMember.project_id == doc.project_id,
-        ProjectMember.user_id == member.user_id,
+        ProjectMember.user_id == current_user.id,
     ).first()
     if not member:
         raise HTTPException(403, "Not a member of this project")
@@ -259,7 +259,7 @@ def get_document_classification(
 @router.get("/documents/{doc_id}/pii-entities", response_model=List[PIIEntityResponse])
 def get_pii_entities(
     doc_id: int,
-    member: ProjectMember = Depends(require_min_role("VIEWER")),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -272,7 +272,7 @@ def get_pii_entities(
     # Verify access
     member = db.query(ProjectMember).filter(
         ProjectMember.project_id == doc.project_id,
-        ProjectMember.user_id == member.user_id,
+        ProjectMember.user_id == current_user.id,
     ).first()
     if not member:
         raise HTTPException(403, "Not a member of this project")
@@ -296,7 +296,7 @@ def get_pii_entities(
 @router.get("/documents/{doc_id}/structured", response_model=List[StructuredDataResponse])
 def get_structured_data(
     doc_id: int,
-    member: ProjectMember = Depends(require_min_role("VIEWER")),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -309,7 +309,7 @@ def get_structured_data(
     # Verify access
     member = db.query(ProjectMember).filter(
         ProjectMember.project_id == doc.project_id,
-        ProjectMember.user_id == member.user_id,
+        ProjectMember.user_id == current_user.id,
     ).first()
     if not member:
         raise HTTPException(403, "Not a member of this project")
@@ -333,7 +333,7 @@ def get_findings(
     doc_id: int,
     category: Optional[str] = None,
     severity: Optional[str] = None,
-    member: ProjectMember = Depends(require_min_role("VIEWER")),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -346,7 +346,7 @@ def get_findings(
     # Verify access
     member = db.query(ProjectMember).filter(
         ProjectMember.project_id == doc.project_id,
-        ProjectMember.user_id == member.user_id,
+        ProjectMember.user_id == current_user.id,
     ).first()
     if not member:
         raise HTTPException(403, "Not a member of this project")
@@ -423,7 +423,7 @@ def get_project_findings(
 def update_finding_status(
     finding_id: int,
     status: str,
-    member: ProjectMember = Depends(require_min_role("ANALYST")),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -436,10 +436,13 @@ def update_finding_status(
     # Verify access
     member = db.query(ProjectMember).filter(
         ProjectMember.project_id == finding.project_id,
-        ProjectMember.user_id == member.user_id,
+        ProjectMember.user_id == current_user.id,
     ).first()
     if not member:
         raise HTTPException(403, "Not a member of this project")
+        
+    if member.role not in ("OWNER", "ADMIN", "ANALYST"):
+        raise HTTPException(403, "Insufficient permissions to update finding status")
     
     if status not in ("NEW", "CONFIRMED", "DISMISSED", "RESOLVED"):
         raise HTTPException(400, "Invalid status")
@@ -454,7 +457,7 @@ def update_finding_status(
 @router.get("/documents/{doc_id}/text")
 def get_document_text(
     doc_id: int,
-    member: ProjectMember = Depends(require_min_role("VIEWER")),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -467,7 +470,7 @@ def get_document_text(
     # Verify access
     member = db.query(ProjectMember).filter(
         ProjectMember.project_id == doc.project_id,
-        ProjectMember.user_id == member.user_id,
+        ProjectMember.user_id == current_user.id,
     ).first()
     if not member:
         raise HTTPException(403, "Not a member of this project")

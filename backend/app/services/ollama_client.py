@@ -135,34 +135,18 @@ Classification:"""
 Return ONLY valid JSON with this exact structure:
 {
     "entities": [
-        {"label": "PERSON", "text": "John Doe", "confidence": 0.85},
-        {"label": "EMAIL", "text": "john@example.com", "confidence": 0.95},
-        {"label": "PHONE", "text": "+1-555-123-4567", "confidence": 0.90},
-        {"label": "SSN", "text": "123-45-6789", "confidence": 0.98},
-        {"label": "ADDRESS", "text": "123 Main St, City", "confidence": 0.75},
-        {"label": "ORGANIZATION", "text": "Acme Corp", "confidence": 0.80},
-        {"label": "DATE", "text": "January 15, 2024", "confidence": 0.70},
-        {"label": "ACCOUNT", "text": "Account #12345", "confidence": 0.85}
+        {
+            "label": "PERSON",
+            "text": "John Doe",
+            "confidence": 0.95
+        }
     ]
 }
 
-Focus on:
-- Names of people (PERSON)
-- Email addresses (EMAIL)
-- Phone numbers (PHONE)
-- Social Security Numbers (SSN)
-- Physical addresses (ADDRESS)
-- Company names (ORGANIZATION)
-- Bank account numbers (ACCOUNT)
-- Employee IDs or client IDs
+Labels must be one of: PERSON, EMAIL, PHONE, SSN, ADDRESS, ORGANIZATION, ACCOUNT, ID.
+Only output JSON."""
 
-Only return entities you are confident about (confidence > 0.6)."""
-
-        prompt = f"""Detect PII entities in this text:
-
-{text[:6000]}
-
-PII Detection:"""
+        prompt = f"Text:\n{text[:6000]}\n\nJSON Output:"
 
         result = self._call_api(model, prompt, system=system_prompt, format_json=True)
         
@@ -199,13 +183,13 @@ Return ONLY valid JSON with this exact structure:
 {{
     "findings": [
         {{
-            "category": "LEGAL|FINANCIAL|COMPLIANCE|RISK|ANOMALY|ADVICE|TREND|IP_ISSUE",
-            "type": "MISSING_CLAUSE|CHANGE_OF_CONTROL|LITIGATION_RISK|UNUSUAL_PATTERN|STRATEGIC_ADVICE|TREND_ANALYSIS|PENALTY",
-            "severity": "LOW|MEDIUM|HIGH|CRITICAL",
-            "description": "Clear description of the finding, trend, or advice. Explain WHY it matters to the acquisition.",
+            "category": "FINANCIAL",
+            "type": "INVOICE_ANOMALY",
+            "severity": "MEDIUM",
+            "description": "Describe the actual issue found in the document text.",
             "evidence_page": 1,
-            "evidence_quote": "Exact quote from document highlighting this risk",
-            "confidence": 0.85
+            "evidence_quote": "Exact quote from document here",
+            "confidence": 0.90
         }}
     ],
     "risk_score_delta": 15

@@ -295,7 +295,7 @@ class PipelineWorker:
             all_entities = rule_entities + [
                 {**e, "detection_method": "semantic"}
                 for e in semantic_entities
-                if e.get("confidence", 0) > 0.6
+                if e.get("confidence", 0) > 0.3
             ]
             
             # Save entities
