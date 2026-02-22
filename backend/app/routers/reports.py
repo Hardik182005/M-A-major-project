@@ -104,6 +104,18 @@ async def get_project_reports(
             "low": low_risk_findings
         },
         "summary": generate_executive_summary(project, findings, documents, use_llm=False),
+        "findings": [
+            {
+                "id": f.id,
+                "category": f.category,
+                "type": f.type,
+                "severity": f.severity,
+                "description": f.description,
+                "confidence": f.confidence,
+                "evidence": f.evidence_quote
+            }
+            for f in findings
+        ],
         "risk_breakdown": {
             "financial": calculate_category_risk(findings, "FINANCIAL"),
             "legal": calculate_category_risk(findings, "LEGAL"),

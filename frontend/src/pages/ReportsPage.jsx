@@ -275,6 +275,61 @@ export default function ReportsPage() {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Printable Findings Table */}
+                                {selectedReport.findings && selectedReport.findings.length > 0 && (
+                                    <div className="report-findings-print-section" style={{ marginTop: '40px', paddingTop: '40px', borderTop: '1px solid #E4E4E7' }}>
+                                        <div className="section-label" style={{ marginBottom: '16px' }}>
+                                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>list_alt</span>
+                                            DETAILED FINDINGS & ADVICE
+                                        </div>
+                                        <table className="analysis-table" style={{ width: '100%', fontSize: '13px' }}>
+                                            <thead>
+                                                <tr>
+                                                    <th style={{ textAlign: 'left', paddingBottom: '12px', borderBottom: '1px solid #E4E4E7' }}>SEVERITY</th>
+                                                    <th style={{ textAlign: 'left', paddingBottom: '12px', borderBottom: '1px solid #E4E4E7' }}>TYPE / CATEGORY</th>
+                                                    <th style={{ textAlign: 'left', paddingBottom: '12px', borderBottom: '1px solid #E4E4E7' }}>OBSERVATION & PREDICTION</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {selectedReport.findings.map(finding => (
+                                                    <tr key={finding.id}>
+                                                        <td style={{ padding: '16px 8px 16px 0', borderBottom: '1px solid #F4F4F5' }}>
+                                                            <span className={`severity-badge sev-${finding.severity?.toLowerCase()}`}>
+                                                                {finding.severity}
+                                                            </span>
+                                                        </td>
+                                                        <td style={{ padding: '16px 8px', borderBottom: '1px solid #F4F4F5' }}>
+                                                            <strong>{finding.type}</strong><br />
+                                                            <span style={{ color: '#71717A', fontSize: '11px' }}>{finding.category}</span>
+                                                        </td>
+                                                        <td style={{ padding: '16px 0 16px 8px', borderBottom: '1px solid #F4F4F5', lineHeight: '1.5' }}>
+                                                            {finding.description}
+                                                            {finding.evidence && (
+                                                                <div style={{ marginTop: '8px', fontSize: '11px', color: '#71717A', fontStyle: 'italic' }}>
+                                                                    "{finding.evidence}"
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+
+                                        <div className="advisory-note" style={{ marginTop: '32px', padding: '24px', backgroundColor: '#FAFAFA', borderLeft: '3px solid #09090B' }}>
+                                            <strong style={{ display: 'block', marginBottom: '8px' }}>AI Predictive Warning & Advisory</strong>
+                                            <p style={{ margin: 0, fontSize: '13px', color: '#3F3F46' }}>
+                                                {selectedReport.risk_level === 'HIGH' ?
+                                                    "Critical material contingencies detected. Post-acquisition integration will likely face severe operational and regulatory friction unless remediation clauses are inserted into the SP&A. Strong recommendation to restructure deal terms."
+                                                    : selectedReport.risk_level === 'MEDIUM' ?
+                                                        "Standard operational friction detected. While no deal-breakers were identified, failure to address these medium-severity issues may result in 10-15% margin erosion post-closure. Advise resolving prior to Day 1."
+                                                        :
+                                                        "All systems present clean baseline health. No major restructuring or defensive posturing required. Proceed with standard integration playbook."
+                                                }
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </>

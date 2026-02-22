@@ -328,7 +328,7 @@ def get_structured_data(
     ]
 
 
-@router.get("/documents/{doc_id}/findings", response_model=List[FindingResponse])
+@router.get("/documents/{doc_id}/findings")
 def get_findings(
     doc_id: int,
     category: Optional[str] = None,
@@ -360,20 +360,22 @@ def get_findings(
     
     findings = query.order_by(Finding.severity.desc(), Finding.confidence.desc()).all()
     
-    return [
-        FindingResponse(
-            id=finding.id,
-            category=finding.category,
-            type=finding.type,
-            severity=finding.severity,
-            status=finding.status,
-            description=finding.description,
-            evidence_page=finding.evidence_page,
-            evidence_quote=finding.evidence_quote,
-            confidence=finding.confidence,
-        )
-        for finding in findings
-    ]
+    return {
+        "findings": [
+            {
+                "id": finding.id,
+                "category": finding.category,
+                "type": finding.type,
+                "severity": finding.severity,
+                "status": finding.status,
+                "description": finding.description,
+                "evidence_page": finding.evidence_page,
+                "evidence_quote": finding.evidence_quote,
+                "confidence": finding.confidence,
+            }
+            for finding in findings
+        ]
+    }
 
 
 @router.get("/projects/{project_id}/findings")
@@ -386,7 +388,7 @@ def get_project_findings(
     db: Session = Depends(get_db),
 ):
     """
-    Get all findings for a project.
+    Get all findings for a project as a flat list.
     """
     query = db.query(Finding).filter(Finding.project_id == project_id)
     
@@ -399,19 +401,13 @@ def get_project_findings(
     
     findings = query.order_by(Finding.severity.desc(), Finding.created_at.desc()).all()
     
-    # Group by document
-    result = {}
+    flat_findings = []
     for finding in findings:
-        if finding.doc_id not in result:
-            doc = db.query(Document).filter(Document.id == finding.doc_id).first()
-            result[finding.doc_id] = {
-                "doc_id": finding.doc_id,
-                "filename": doc.filename if doc else "Unknown",
-                "findings": [],
-            }
-        
-        result[finding.doc_id]["findings"].append({
+        doc = db.query(Document).filter(Document.id == finding.doc_id).first()
+        flat_findings.append({
             "id": finding.id,
+            "doc_id": finding.doc_id,
+            "doc_name": doc.filename if doc else "Unknown",
             "category": finding.category,
             "type": finding.type,
             "severity": finding.severity,
@@ -420,7 +416,7 @@ def get_project_findings(
             "confidence": finding.confidence,
         })
     
-    return list(result.values())
+    return {"findings": flat_findings}
 
 
 @router.patch("/findings/{finding_id}/status")
