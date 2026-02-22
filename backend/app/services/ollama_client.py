@@ -285,7 +285,7 @@ Answer:"""
             "sources": context_chunks[:3],  # Top 3 source chunks
         }
     
-    def generate(self, prompt: str, model: str = None, max_tokens: int = 500) -> str:
+    def generate(self, prompt: str, model: str = None, max_tokens: int = 500, system: str = None) -> str:
         """
         Simple generate method for basic text generation.
         
@@ -293,6 +293,7 @@ Answer:"""
             prompt: The prompt to send to the model
             model: Model to use (defaults to OLLAMA_ANALYSIS_MODEL)
             max_tokens: Maximum tokens to generate (not used in Ollama, but kept for API compatibility)
+            system: Optional system prompt to guide behavior
             
         Returns:
             Generated text string
@@ -300,7 +301,7 @@ Answer:"""
         if model is None:
             model = settings.OLLAMA_ANALYSIS_MODEL
         
-        result = self._call_api(model, prompt)
+        result = self._call_api(model, prompt, system=system)
         
         if "error" in result:
             logger.error(f"Generate failed: {result}")

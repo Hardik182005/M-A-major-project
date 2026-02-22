@@ -101,29 +101,21 @@ async def chat(
     context = "\n\n---\n\n".join(context_parts)
     
     if context:
-        prompt = f"""You are MergerMind, a highly intelligent AI Due Diligence Assistant.
-Answer the user's question accurately using ONLY the context provided.
-If the context does not contain the answer, say "I don't have enough information to answer that based on the current documents."
-
-Context from data room documents:
-{context}
-
-User question: {request.message}
-
-Answer:"""
+        system = """You are MergerMind, a highly intelligent AI Due Diligence Assistant.
+Answer the user's question accurately using ONLY the context provided below.
+If the context does not contain the answer, say "I don't have enough information to answer that based on the current documents." """
+        prompt = f"Context from data room documents:\n{context}\n\nUser question: {request.message}"
     else:
-        prompt = f"""You are MergerMind, a helpful AI Due Diligence Assistant. There are currently no documents in the data room.
+        system = """You are MergerMind, a helpful AI Due Diligence Assistant. There are currently no documents in the data room.
 Answer the user's question or greeting simply.
-If they ask for analysis, politely tell them to upload documents first.
-
-User question: {request.message}
-
-Answer:"""
+If they ask for analysis, politely tell them to upload documents first."""
+        prompt = f"User question: {request.message}"
     
     try:
         # Call Ollama
         answer = ollama_client.generate(
-            prompt=prompt
+            prompt=prompt,
+            system=system
         )
     except Exception as e:
         logger.error(f"Ollama chat error: {e}")
