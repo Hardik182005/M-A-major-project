@@ -159,7 +159,7 @@ export default function DashboardPage() {
                         <div className="pipeline-list">
                             <div className="pipeline-item">
                                 <div className="pipeline-info">
-                                    <span>TEXT EXTRACTION</span>
+                                    <span>Text Extraction</span>
                                     <span>{formatPercent(pipeline?.stages?.TEXT_EXTRACTION || 0)}</span>
                                 </div>
                                 <div className="pipeline-bar-bg">
@@ -168,7 +168,7 @@ export default function DashboardPage() {
                             </div>
                             <div className="pipeline-item">
                                 <div className="pipeline-info">
-                                    <span>PII SCANNING</span>
+                                    <span>PII Scanning</span>
                                     <span>{formatPercent(pipeline?.stages?.PII_SCANNING || 0)}</span>
                                 </div>
                                 <div className="pipeline-bar-bg">
@@ -177,7 +177,7 @@ export default function DashboardPage() {
                             </div>
                             <div className="pipeline-item">
                                 <div className="pipeline-info">
-                                    <span>STRUCTURING</span>
+                                    <span>Structuring & Parsing</span>
                                     <span>{formatPercent(pipeline?.stages?.STRUCTURING || 0)}</span>
                                 </div>
                                 <div className="pipeline-bar-bg">
@@ -186,7 +186,7 @@ export default function DashboardPage() {
                             </div>
                             <div className="pipeline-item">
                                 <div className="pipeline-info">
-                                    <span>AI ANALYSIS</span>
+                                    <span>AI Analysis</span>
                                     <span>{formatPercent(pipeline?.stages?.AI_ANALYSIS || 0)}</span>
                                 </div>
                                 <div className="pipeline-bar-bg">
@@ -195,7 +195,7 @@ export default function DashboardPage() {
                             </div>
                             {pipeline?.current && (
                                 <div className="pipeline-status">
-                                    CURRENT STEP: {pipeline.current.message}
+                                    Current Step: {pipeline.current.message}
                                 </div>
                             )}
                         </div>

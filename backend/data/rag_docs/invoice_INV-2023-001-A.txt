@@ -1,0 +1,9 @@
+DOCUMENT: Invoice
+INVOICE ID: INV-2023-001-A
+VENDOR: VENDOR_1 ("TechSupply Inc.")
+DATE: 2023-10-11
+AMOUNT: 12,450.00 USD
+PO: PO-7781
+LINE ITEMS:
+- Item: Network equipment bundle, Qty 1, 12,450.00
+NOTE: "Revised invoice due to formatting correction."

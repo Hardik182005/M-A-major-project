@@ -13,11 +13,8 @@ export default function LandingPage() {
     const [capVisible, setCapVisible] = useState(false);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        if (localStorage.getItem('access_token')) {
-            navigate('/dashboard');
-        }
-    }, [navigate]);
+    // Removed auto-redirect so the landing page can always be viewed
+    // even if the user clicks 'Back' from the dashboard.
 
     useEffect(() => {
         const handleScroll = () => setScrollY(window.scrollY);
@@ -58,8 +55,8 @@ export default function LandingPage() {
                     </Link>
                     <div className="nav-links">
                         <a href="#platform">Platform</a>
-                        <a href="#security">Security</a>
-                        <a href="#insights">Insights</a>
+                        <Link to="/security">Security</Link>
+                        <Link to="/insights">Insights</Link>
                     </div>
                     <div className="nav-actions">
                         <Link to="/login" className="nav-login">Login</Link>
@@ -218,29 +215,7 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* ── Security Section ───────────────── */}
-            <section id="security" className="security-section">
-                <div className="security-inner">
-                    <div className="security-badge">SECURITY & COMPLIANCE</div>
-                    <h3 className="security-title font-display">Enterprise-Grade Protection</h3>
-                    <p className="security-subtitle">Your data room is protected by the same standards trusted by Fortune 500 firms.</p>
-                    <div className="security-grid">
-                        {[
-                            { icon: 'lock', label: 'AES-256 Encryption' },
-                            { icon: 'verified_user', label: 'SOC 2 Type II' },
-                            { icon: 'shield', label: 'GDPR Compliant' },
-                            { icon: 'fingerprint', label: 'SSO / SAML 2.0' },
-                            { icon: 'admin_panel_settings', label: 'Role-Based Access' },
-                            { icon: 'history', label: 'Immutable Audit Trail' },
-                        ].map(s => (
-                            <div className="security-item" key={s.label}>
-                                <span className="material-symbols-outlined">{s.icon}</span>
-                                <span>{s.label}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
+            {/* Landing page simplified as requested */}
 
             {/* ── CTA Section ───────────────────── */}
             <section className="cta-section">

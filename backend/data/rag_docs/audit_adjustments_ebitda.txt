@@ -1,0 +1,36 @@
+DOCUMENT: EBITDA Audit Adjustments
+COMPANY: Acme Corp
+PERIOD: FY2023
+
+REPORTED EBITDA: $2,800,000
+
+ADJUSTMENTS:
+1. Non-recurring litigation costs: +$200,000
+   - One-time patent defense costs should be added back
+   
+2. Stock-based compensation: +$350,000
+   - Non-cash expense, standard EBITDA add-back
+
+3. Owner's excess compensation: +$150,000
+   - CEO salary above market rate by $150K
+
+4. Related party transactions: -$120,000
+   - Below-market rent from CEO-owned property
+   - Should be adjusted to fair market value
+
+5. Revenue timing adjustment: -$180,000
+   - Q4 revenue recognized early per ASC 606 review
+   
+6. Inventory write-down: -$95,000
+   - Obsolete inventory not yet written off
+
+ADJUSTED EBITDA: $3,105,000
+
+EBITDA MARGIN (REPORTED): 14.0%
+EBITDA MARGIN (ADJUSTED): 15.5%
+
+QUALITY OF EARNINGS NOTES:
+- Adjusted EBITDA is 10.9% higher than reported
+- Revenue recognition practices require deeper review
+- Related party transactions should be eliminated or market-adjusted
+- Working capital normalization needed (DSO trending up)

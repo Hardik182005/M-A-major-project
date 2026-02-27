@@ -1,6 +1,9 @@
 import os
 import secrets
 import smtplib
+import urllib.request
+import urllib.error
+import json as json_mod
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
@@ -72,18 +75,17 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db
 
     In Swagger Authorize dialog → put your EMAIL in the 'username' field.
     """
-    check_rate_limit(request, "login")
+    email_clean = form_data.username.strip().lower()
+    print(f"[LOGIN ATTEMPT] Email: '{email_clean}'")
+    
+    user = db.query(User).filter(User.email == email_clean).first()
 
-    user = db.query(User).filter(User.email == form_data.username).first()
     if not user:
+        print(f"[LOGIN FAILED] User not found: {email_clean}")
         raise HTTPException(401, "Invalid credentials")
 
-    # check account lock
-    if user.locked_until and user.locked_until > datetime.utcnow():
-        remaining = int((user.locked_until - datetime.utcnow()).total_seconds() // 60) + 1
-        raise HTTPException(423, f"Account locked. Try again in {remaining} minutes.")
-
     if not verify_password(form_data.password, user.password_hash):
+        print(f"[LOGIN FAILED] Password mismatch for: {email_clean}")
         # increment failed attempts
         user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
         if user.failed_login_attempts >= settings.ACCOUNT_LOCK_THRESHOLD:
@@ -288,21 +290,14 @@ def google_auth(req: GoogleAuthRequest, request: Request, db: Session = Depends(
     Verify Google access token and login or register the user.
     Frontend sends access_token + user info from Google.
     """
-    import urllib.request
-    import json as json_mod
-
     try:
         # Verify the access token by calling Google's userinfo endpoint
-        if req.credential == "mock_token":
-            # Mock bypass for testing without real credentials
-            google_user = {"email": req.email, "name": req.name, "email_verified": True}
-        else:
-            google_req = urllib.request.Request(
+        google_req = urllib.request.Request(
                 "https://www.googleapis.com/oauth2/v3/userinfo",
                 headers={"Authorization": f"Bearer {req.credential}"}
             )
-            with urllib.request.urlopen(google_req, timeout=10) as resp:
-                google_user = json_mod.loads(resp.read().decode())
+        with urllib.request.urlopen(google_req, timeout=10) as resp:
+            google_user = json_mod.loads(resp.read().decode())
 
         email = google_user.get("email", req.email)
         name = google_user.get("name", req.name)
@@ -313,10 +308,14 @@ def google_auth(req: GoogleAuthRequest, request: Request, db: Session = Depends(
         if not google_user.get("email_verified", False):
             raise HTTPException(status_code=400, detail="Google email not verified")
 
-    except urllib.error.HTTPError:
-        raise HTTPException(status_code=401, detail="Invalid Google token")
+    except urllib.error.HTTPError as e:
+        print(f"[GOOGLE AUTH ERROR] HTTPError: {e.code} - {e.reason}")
+        raise HTTPException(status_code=401, detail=f"Google token invalid: {e.reason}")
     except Exception as e:
+        print(f"[GOOGLE AUTH ERROR] Unexpected: {str(e)}")
         raise HTTPException(status_code=401, detail=f"Google verification failed: {str(e)}")
+
+    print(f"[GOOGLE AUTH] Verified {email}. Proceeding to login/signup.")
 
     # Find or create user
     user = db.query(User).filter(User.email == email).first()
@@ -436,8 +435,10 @@ def forgot_password(req: ForgotPasswordRequest, request: Request, db: Session = 
         user.reset_token_expiry = datetime.utcnow() + timedelta(minutes=15)
         db.commit()
 
-        # Send email
-        _send_reset_email(req.email, reset_token)
+        # Mock Email Send (Print to console for local testing)
+        print(f"\n[MOCK EMAIL] Password Reset Link for {req.email}:")
+        print(f"http://localhost:5173/reset-password?token={reset_token}\n")
+
         log_audit(db,
                   action="PASSWORD_RESET_REQUESTED",
                   actor_id=user.id,

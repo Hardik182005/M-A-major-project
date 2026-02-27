@@ -604,3 +604,228 @@
         transform: rotate(360deg);
     }
 }
+
+.markdown-body {
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.markdown-body p {
+    margin: 0 0 12px 0;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+    margin: 16px 0 8px 0;
+    font-weight: 700;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+    margin: 0 0 12px 0;
+    padding-left: 20px;
+}
+
+.markdown-body li {
+    margin-bottom: 4px;
+}
+
+.markdown-body strong {
+    font-weight: 700;
+}
+
+/* Markdown Table Styles for Comparative Analysis */
+.markdown-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 13px;
+    background: white;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.markdown-body th {
+    background-color: #F4F4F5;
+    color: #18181B;
+    font-weight: 700;
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 2px solid #E4E4E7;
+}
+
+.markdown-body td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #F4F4F5;
+    color: #3F3F46;
+}
+
+.markdown-body tr:last-child td {
+    border-bottom: none;
+}
+
+.markdown-body tr:hover td {
+    background-color: #FAFAFA;
+}
+
+/* Typing dots animation */
+.typing-dots {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 4px 0;
+}
+
+.typing-dots span {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #A1A1AA;
+    border-radius: 50%;
+    animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-dots span:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.typing-dots span:nth-child(2) {
+    animation-delay: 0.16s;
+}
+
+.typing-dots span:nth-child(3) {
+    animation-delay: 0.32s;
+}
+
+@keyframes typingBounce {
+
+    0%,
+    80%,
+    100% {
+        transform: scale(0.6);
+        opacity: 0.4;
+    }
+
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Suggested prompt chips */
+.suggested-prompts-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.suggested-prompt {
+    background: white;
+    border: 1px solid #E4E4E7;
+    color: #3F3F46;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.suggested-prompt:hover {
+    background: #F4F4F5;
+    border-color: #A1A1AA;
+}
+
+/* Delete session button */
+.delete-session-btn {
+    background: none;
+    border: none;
+    color: #D4D4D8;
+    cursor: pointer;
+    margin-left: auto;
+    padding: 2px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    transition: all 0.2s;
+}
+
+.chat-session-item:hover .delete-session-btn {
+    opacity: 1;
+}
+
+.delete-session-btn:hover {
+    color: #EF4444;
+    background: #FEE2E2;
+}
+
+/* Empty chat state */
+.empty-chat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 40px;
+}
+
+.ai-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #71717A;
+    background: #F4F4F5;
+    padding: 6px 16px;
+    border-radius: 20px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: #22C55E;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Markdown code blocks */
+.markdown-body code {
+    background: #F4F4F5;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.markdown-body pre {
+    background: #18181B;
+    color: #E4E4E7;
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 13px;
+    margin: 12px 0;
+}
+
+.markdown-body pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+}

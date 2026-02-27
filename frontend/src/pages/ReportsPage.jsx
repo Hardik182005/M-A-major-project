@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
 import api, { getProjectReports, generateReport, getReportSummary } from '../api';
+import ReactMarkdown from 'react-markdown';
 import './ReportsPage.css';
 
 export default function ReportsPage() {
@@ -59,6 +60,109 @@ export default function ReportsPage() {
         } finally {
             setGenerating(false);
         }
+    };
+
+    const handleDownloadReport = () => {
+        if (!selectedReport) return;
+
+        let r = '';
+        r += `# 📋 Due Diligence Risk Assessment Report\n\n`;
+        r += `**Project:** ${selectedReport.project_name || selectedReport.name}\n`;
+        r += `**Report ID:** ${selectedReport.report_id}\n`;
+        r += `**Date Generated:** ${new Date().toLocaleDateString()}\n`;
+        r += `**Risk Level:** ⚠️ ${selectedReport.risk_level}\n`;
+        r += `**Risk Score:** ${selectedReport.risk_score || 0}/100\n\n`;
+        r += `---\n\n`;
+
+        // Executive Summary
+        r += `## 📌 Executive Summary\n\n`;
+        r += (selectedReport.summary || 'No summary available.') + '\n\n';
+
+        // Risk Breakdown
+        if (selectedReport.risk_breakdown) {
+            r += `## 📊 Risk Breakdown\n\n`;
+            r += `| Category | Risk Score | Visual |\n`;
+            r += `|----------|-----------|--------|\n`;
+            Object.entries(selectedReport.risk_breakdown).forEach(([cat, val]) => {
+                const bar = '█'.repeat(Math.round(val / 5)) + '░'.repeat(20 - Math.round(val / 5));
+                r += `| ${cat.toUpperCase()} | ${val}% | ${bar} |\n`;
+            });
+            r += '\n';
+        }
+
+        // AI Findings with Highlighting
+        if (selectedReport.findings && selectedReport.findings.length > 0) {
+            r += `## 🔍 AI-Detected Findings & Observations\n\n`;
+
+            // Group by severity
+            const critical = selectedReport.findings.filter(f => f.severity === 'CRITICAL' || f.severity === 'HIGH');
+            const medium = selectedReport.findings.filter(f => f.severity === 'MEDIUM');
+            const low = selectedReport.findings.filter(f => f.severity === 'LOW');
+
+            if (critical.length > 0) {
+                r += `### 🔴 HIGH / CRITICAL SEVERITY\n\n`;
+                critical.forEach((f, i) => {
+                    r += `**${i + 1}. [${f.severity}] ${f.type || f.category}**\n`;
+                    r += `- **Category:** ${f.category}\n`;
+                    r += `- **Description:** ${f.description}\n`;
+                    if (f.evidence) r += `- **Evidence:** _"${f.evidence}"_\n`;
+                    if (f.confidence) r += `- **AI Confidence:** ${(f.confidence * 100).toFixed(0)}%\n`;
+                    r += '\n';
+                });
+            }
+
+            if (medium.length > 0) {
+                r += `### 🟡 MEDIUM SEVERITY\n\n`;
+                medium.forEach((f, i) => {
+                    r += `**${i + 1}. [${f.severity}] ${f.type || f.category}**\n`;
+                    r += `- **Category:** ${f.category}\n`;
+                    r += `- **Description:** ${f.description}\n`;
+                    if (f.evidence) r += `- **Evidence:** _"${f.evidence}"_\n`;
+                    r += '\n';
+                });
+            }
+
+            if (low.length > 0) {
+                r += `### 🟢 LOW SEVERITY\n\n`;
+                low.forEach((f, i) => {
+                    r += `**${i + 1}. [${f.severity}] ${f.type || f.category}**\n`;
+                    r += `- **Description:** ${f.description}\n`;
+                    r += '\n';
+                });
+            }
+        }
+
+        // PII Detection Section
+        r += `## 🛡️ PII Detection Summary\n\n`;
+        r += `> **Note:** PII entities are automatically detected by the AI pipeline during document processing.\n`;
+        r += `> Review each flagged entity for compliance with data protection regulations (GDPR, CCPA, etc.).\n\n`;
+        r += `PII entities detected across project documents include: **PERSON**, **EMAIL**, **PHONE**, **SSN**, **ADDRESS**, **ORGANIZATION**, **ACCOUNT**, **ID** types.\n\n`;
+        r += `For full PII details, navigate to the Document Viewer in the application.\n\n`;
+
+        // Acquisition Verdict
+        r += `---\n\n## 🏛️ AI Acquisition Verdict\n\n`;
+        if (selectedReport.risk_level === 'HIGH') {
+            r += `> ⚠️ **PROCEED WITH EXTREME CAUTION**\n>\n`;
+            r += `> Critical material contingencies detected. Post-acquisition integration will likely face severe operational and regulatory friction unless remediation clauses are inserted into the SPA.\n`;
+        } else if (selectedReport.risk_level === 'MEDIUM') {
+            r += `> ⚠️ **PROCEED WITH CAUTION**\n>\n`;
+            r += `> Standard operational friction detected. While no deal-breakers were identified, failure to address medium-severity issues may result in margin erosion post-closure.\n`;
+        } else {
+            r += `> ✅ **FAVORABLE — PROCEED**\n>\n`;
+            r += `> All systems present clean baseline health. No major restructuring or defensive posturing required.\n`;
+        }
+
+        r += `\n---\n_Generated by MergerMindAI — AI-Powered Due Diligence Platform_\n`;
+
+        const blob = new Blob([r], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Risk_Assessment_${selectedReport.report_id}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     };
 
     // Badge styling helpers
@@ -197,8 +301,8 @@ export default function ReportsPage() {
                                         </span>
                                     </div>
                                     <div className="preview-toolbar-right">
-                                        <button className="toolbar-btn" onClick={() => window.print()}>
-                                            <span className="material-symbols-outlined">download</span> PDF
+                                        <button className="toolbar-btn" onClick={handleDownloadReport}>
+                                            <span className="material-symbols-outlined">download</span> MD / TXT
                                         </button>
                                         <button className="toolbar-btn" onClick={() => window.print()}>
                                             <span className="material-symbols-outlined">print</span> PRINT
@@ -222,9 +326,11 @@ export default function ReportsPage() {
                                                 <span className="material-symbols-outlined" style={{ fontSize: 16 }}>psychology</span>
                                                 AI INVESTMENT OPINION
                                             </div>
-                                            <p className="opinion-text">
-                                                {selectedReport.summary || 'No summary available. Generate a report to see the AI analysis.'}
-                                            </p>
+                                            <div className="opinion-text">
+                                                {selectedReport.summary ? (
+                                                    <ReactMarkdown>{selectedReport.summary}</ReactMarkdown>
+                                                ) : 'No summary available. Generate a report to see the AI analysis.'}
+                                            </div>
                                         </div>
                                     </div>
 

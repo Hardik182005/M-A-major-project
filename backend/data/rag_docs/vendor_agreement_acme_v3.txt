@@ -1,0 +1,30 @@
+DOCUMENT: Vendor Agreement v3
+PARTIES: Acme Corp ("Company") and Logistics Partners ("Vendor")
+EFFECTIVE DATE: 2023-06-01
+TERM: 24 months, auto-renewal unless 60-day notice given.
+
+SCOPE OF SERVICES:
+- Supply chain management and warehousing for all product lines.
+- Freight forwarding and customs brokerage.
+
+PRICING:
+- Fixed monthly retainer: $45,000 USD
+- Variable per-shipment: $120-$350 depending on weight class
+
+TERMINATION:
+- For convenience by either party with 60 days' written notice.
+- For cause: Immediate termination for material breach.
+
+IP RIGHTS:
+- All proprietary logistics software developed under this agreement is jointly owned.
+- Vendor retains rights to pre-existing IP.
+
+INDEMNIFICATION:
+- Vendor indemnifies Company against claims arising from Vendor's negligence.
+- Cap on indemnification: 2x annual fees paid.
+
+NON-COMPETE:
+- Vendor agrees to a 12-month non-compete within the North American market.
+
+CHANGE OF CONTROL:
+- Agreement may be terminated by Company if Vendor undergoes a change of control event.

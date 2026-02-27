@@ -114,14 +114,15 @@ class DonutClient:
         
         self.processor = None
         self.model = None
-        
-        if TORCH_AVAILABLE:
-            self._load_model()
+        self._loaded = False
+        # Removed immediate _load_model() call for faster app startup
     
     def _load_model(self):
         """Load the Donut model and processor."""
+        if self._loaded:
+            return
         try:
-            logger.info(f"Loading Donut model: {self.model_name}")
+            logger.info(f"Lazy loading Donut model: {self.model_name}...")
             
             self.processor = DonutProcessor.from_pretrained(self.model_name)
             
@@ -135,7 +136,7 @@ class DonutClient:
                 self.device = "cpu"
             
             self.model.eval()
-            
+            self._loaded = True
             logger.info(f"Donut model loaded successfully on {self.device}")
             
         except Exception as e:
@@ -144,7 +145,9 @@ class DonutClient:
             self.processor = None
     
     def is_available(self) -> bool:
-        """Check if Donut model is available."""
+        """Check if Donut model is available (loads on demand)."""
+        if not self._loaded and TORCH_AVAILABLE:
+            self._load_model()
         return self.model is not None and self.processor is not None
     
     def extract_structure(

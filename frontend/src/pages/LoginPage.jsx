@@ -59,29 +59,6 @@ export default function LoginPage() {
         onError: () => setError('Google sign-in was cancelled or failed'),
     });
 
-    const handleGoogleClick = async () => {
-        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-        if (!clientId || clientId.includes('YOUR_GOOGLE')) {
-            // Mock bypass if credentials aren't set up yet
-            try {
-                setLoading(true);
-                const res = await api.post('/auth/google', {
-                    credential: 'mock_token',
-                    email: 'demo-user@mergermind.com',
-                    name: 'Demo User',
-                });
-                localStorage.setItem('access_token', res.data.access_token);
-                navigate('/dashboard');
-            } catch (err) {
-                setError('Google Mock Sign-In failed.');
-            } finally {
-                setLoading(false);
-            }
-            return;
-        }
-        googleLogin();
-    };
-
     return (
         <div className="auth-page">
             <div className="auth-left">
@@ -99,26 +76,15 @@ export default function LoginPage() {
                     <p className="auth-left-sub">
                         Analyze thousands of documents. Detect risks in seconds. Make confident acquisition decisions.
                     </p>
-
-                    <div className="auth-left-features">
-                        <div className="auth-feature">
-                            <span className="material-symbols-outlined">lock</span>
-                            256-bit encryption & SOC 2 compliant
-                        </div>
-                        <div className="auth-feature">
-                            <span className="material-symbols-outlined">bolt</span>
-                            AI analysis starts immediately
-                        </div>
-                        <div className="auth-feature">
-                            <span className="material-symbols-outlined">check_circle</span>
-                            Free for your first project
-                        </div>
-                    </div>
                 </div>
             </div>
 
             <div className="auth-right">
                 <div className="auth-form-wrap animate-fade-in-up">
+                    <Link to="/" className="back-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#71717A', textDecoration: 'none', marginBottom: '24px', fontSize: '14px', fontWeight: 500 }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
+                        Back to Home
+                    </Link>
                     <h2 className="auth-form-title">Welcome back</h2>
                     <p className="auth-form-subtitle">Sign in to your data room</p>
 
@@ -155,7 +121,7 @@ export default function LoginPage() {
 
                     <div className="auth-divider"><span>or continue with</span></div>
 
-                    <button type="button" className="btn btn-outline google-btn" onClick={handleGoogleClick} disabled={loading}>
+                    <button type="button" className="btn btn-outline google-btn" onClick={() => googleLogin()} disabled={loading}>
                         <GoogleIcon size={18} />
                         Sign in with Google
                     </button>

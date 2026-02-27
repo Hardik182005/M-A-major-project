@@ -1,0 +1,37 @@
+DOCUMENT: Litigation Summary
+COMPANY: Acme Corp
+AS OF: 2023-12-01
+
+PENDING LITIGATION:
+1. Case: SmallTech LLC v. Acme Corp
+   Court: US District Court, Delaware
+   Filed: 2023-03-15
+   Claim: Patent infringement on data processing method (US Patent 10,XXX,XXX)
+   Status: Discovery phase
+   Estimated Exposure: $2,000,000 - $5,000,000
+   Outside Counsel: Morrison & Associates
+   Insurance Coverage: $3,000,000 (D&O policy)
+
+2. Case: Former Employee (John Doe) v. Acme Corp
+   Court: Superior Court, California
+   Filed: 2023-07-22
+   Claim: Wrongful termination and unpaid overtime
+   Status: Settlement negotiations
+   Estimated Exposure: $150,000 - $400,000
+   Outside Counsel: In-house
+
+3. Case: Acme Corp v. DataPirate Inc.
+   Court: US District Court, Northern California
+   Filed: 2023-01-10
+   Claim: Trade secret misappropriation by former contractor
+   Status: Preliminary injunction granted
+   Estimated Recovery: $800,000
+
+RESOLVED MATTERS (LAST 12 MONTHS):
+- EPA compliance fine: $25,000 (paid Q2 2023)
+- Customer data breach settlement: $175,000 (Q1 2023)
+
+TOTAL CURRENT LITIGATION EXPOSURE: $2,150,000 - $5,400,000
+TOTAL CONTINGENT LIABILITIES: $5,575,000
+
+RISK ASSESSMENT: HIGH - Patent case could result in material loss

@@ -221,21 +221,74 @@ strong {
 }
 
 .pdf-highlight {
-    margin: -12px;
-    padding: 12px;
-    border-radius: 4px;
-    border: 2px dashed transparent;
-    margin-bottom: 12px;
+    padding: 2px 4px;
+    border-radius: 3px;
     position: relative;
+    cursor: help;
 }
 
 .red-highlight {
-    border-color: #EF4444;
-    background: rgba(239, 68, 68, 0.05);
+    background: rgba(239, 68, 68, 0.15);
+    border-bottom: 3px solid #EF4444;
+    color: #18181B;
 }
 
 .yellow-highlight {
-    border-color: #F59E0B;
+    background: rgba(234, 179, 8, 0.25);
+    border-bottom: 2px solid #EAB308;
+    color: #18181B;
+}
+
+/* Severity-based colors for AI findings */
+.critical-highlight {
+    background: rgba(220, 38, 38, 0.25);
+    border-bottom: 3px solid #DC2626;
+    color: #18181B;
+    font-weight: 600;
+}
+
+.high-highlight {
+    background: rgba(249, 115, 22, 0.2);
+    border-bottom: 3px solid #F97316;
+    color: #18181B;
+}
+
+.medium-highlight {
+    background: rgba(245, 158, 11, 0.2);
+    border-bottom: 2px solid #F59E0B;
+    color: #18181B;
+}
+
+.low-highlight {
+    background: rgba(113, 113, 122, 0.15);
+    border-bottom: 2px solid #71717A;
+    color: #18181B;
+}
+
+/* PII highlight */
+.pii-highlight {
+    background: rgba(234, 179, 8, 0.3);
+    border-bottom: 2px solid #EAB308;
+    color: #18181B;
+}
+
+/* Keyword-based risk category colors */
+.financial-keyword {
+    background: rgba(239, 68, 68, 0.12);
+    border-bottom: 2px dashed #EF4444;
+    color: #18181B;
+}
+
+.legal-keyword {
+    background: rgba(249, 115, 22, 0.12);
+    border-bottom: 2px dashed #F97316;
+    color: #18181B;
+}
+
+.operational-keyword {
+    background: rgba(168, 85, 247, 0.12);
+    border-bottom: 2px dashed #A855F7;
+    color: #18181B;
 }
 
 .grey-highlight {
@@ -247,6 +300,151 @@ strong {
     background: #18181B;
     color: white;
     padding: 0 4px;
+}
+
+/* PII sidebar cards */
+.pii-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.pii-label {
+    background: #EAB308;
+    color: #18181B;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.pii-confidence {
+    font-size: 11px;
+    color: #71717A;
+}
+
+.pii-text {
+    font-size: 13px;
+    color: #E4E4E7;
+    font-style: italic;
+    margin-bottom: 4px;
+}
+
+.pii-replacement {
+    font-size: 11px;
+    color: #71717A;
+}
+
+.pii-warning {
+    font-size: 12px;
+    color: #F59E0B;
+    margin: 0;
+}
+
+.pii-summary h3 {
+    color: #EAB308;
+}
+
+/* Annotated text toggle */
+.annotated-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 24px;
+    background: #18181B;
+    border-bottom: 1px solid #27272A;
+}
+
+.toggle-annotated-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #27272A;
+    border: 1px solid #3F3F46;
+    color: #A1A1AA;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.toggle-annotated-btn:hover {
+    background: #3F3F46;
+    color: white;
+}
+
+.toggle-annotated-btn.active {
+    background: #1E3A8A;
+    color: #60A5FA;
+    border-color: #2563EB;
+}
+
+.highlight-legend {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #A1A1AA;
+    font-weight: 500;
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+.annotated-text-view {
+    overflow-y: auto;
+    max-height: calc(100vh - 180px);
+}
+
+.annotated-text-view .document-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.annotated-text-view .document-text p {
+    margin-bottom: 12px;
+}
+
+/* Reprocess button */
+.reprocess-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1E3A8A;
+    color: #60A5FA;
+    border: 1px solid #2563EB;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: all 0.2s;
+}
+
+.reprocess-btn:hover {
+    background: #1D4ED8;
+    color: white;
+}
+
+.reprocess-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .signatures {

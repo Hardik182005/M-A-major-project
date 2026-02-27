@@ -13,6 +13,8 @@ import ReportsPage from './pages/ReportsPage';
 import AuditPage from './pages/AuditPage';
 import AIAssistantPage from './pages/AIAssistantPage';
 import SettingsPage from './pages/SettingsPage';
+import SecurityPage from './pages/SecurityPage';
+import InsightsPage from './pages/InsightsPage';
 
 export default function App() {
   return (
@@ -34,6 +36,8 @@ export default function App() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/settings/preferences" element={<SettingsPage />} />
         <Route path="/settings/billing" element={<SettingsPage />} />
+        <Route path="/security" element={<SecurityPage />} />
+        <Route path="/insights" element={<InsightsPage />} />
       </Routes>
     </BrowserRouter>
   );

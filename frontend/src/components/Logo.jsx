@@ -12,46 +12,46 @@ const getStarPoints = (cx, cy, outerRadius, innerRadius, points) => {
 };
 
 export function LogoIcon({ size = 32, color = 'white' }) {
-    // 16 points matches the uploaded geometric mandala
-    const strokeW = "4"; // Thinner lines
+    // 12 points matches the uploaded geometric mandala perfectly
+    const strokeW = "3"; // Slight thin lines
     return (
         <svg width={size} height={size} viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Outermost Chevron Ring (Ring 1) */}
+            {/* Outermost Chevron Ring */}
             <polygon
-                points={getStarPoints(150, 150, 145, 105, 16)}
+                points={getStarPoints(150, 150, 145, 100, 12)}
                 stroke={color}
                 strokeWidth={strokeW}
                 strokeLinejoin="miter"
                 strokeMiterlimit="20"
             />
-            {/* Second Chevron Ring (Ring 2) */}
+            {/* Second Chevron Ring */}
             <polygon
-                points={getStarPoints(150, 150, 120, 80, 16)}
+                points={getStarPoints(150, 150, 120, 75, 12)}
                 stroke={color}
                 strokeWidth={strokeW}
                 strokeLinejoin="miter"
                 strokeMiterlimit="20"
             />
-            {/* Third Chevron Ring (Ring 3) */}
+            {/* Third Chevron Ring */}
             <polygon
-                points={getStarPoints(150, 150, 95, 55, 16)}
+                points={getStarPoints(150, 150, 95, 50, 12)}
                 stroke={color}
                 strokeWidth={strokeW}
                 strokeLinejoin="miter"
                 strokeMiterlimit="20"
             />
-            {/* Internal Spikes (Ring 4) */}
+            {/* Internal Petals */}
             <polygon
-                points={getStarPoints(150, 150, 68, 26, 16)}
+                points={getStarPoints(150, 150, 65, 18, 12)}
                 stroke={color}
-                strokeWidth="5"
+                strokeWidth={strokeW}
                 strokeLinejoin="miter"
                 strokeMiterlimit="20"
             />
             {/* Center Donut Hole */}
             <circle
-                cx="150" cy="150" r="14"
-                stroke={color} strokeWidth="12"
+                cx="150" cy="150" r="10"
+                stroke={color} strokeWidth="4"
             />
         </svg>
     );

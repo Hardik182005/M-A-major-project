@@ -265,7 +265,8 @@ def generate_executive_summary(project, findings, documents, use_llm=True):
     for idx, f in enumerate(medium_severity[:3]):
         findings_context += f"- Medium Risk ({f.category}): {f.description[:100]}\n"
         
-    prompt = f"""You are a top-tier Wall Street M&A Partner. Write a cohesive, extremely accurate, and professional executive due diligence summary (max 3 paragraphs) for Project '{project.name}'.
+    prompt = f"""You are a top-tier Wall Street M&A Partner and AI Due Diligence Assistant. Generate a DETAILED and COMPREHENSIVE Due Diligence Assessment for Project '{project.name}'.
+You must use Markdown formatting to organize your response.
 
 Data Room Stats:
 - Documents processed: {len(documents)}
@@ -276,14 +277,22 @@ Data Room Stats:
 Verified Major Findings Context:
 {findings_context}
 
-INSTRUCTIONS for maximum accuracy:
-1. Do not use filler introductions or generic platitudes.
-2. Formulate a definitive, data-driven assessment.
-3. Weigh the High/Critical severity issues heavily.
-4. If Critical risks exist, state explicitly that the deal faces material contingencies.
-5. If no major risks exist, state the target presents clean operational health in the processed scope.
+INSTRUCTIONS:
+Provide the assessment structured EXACTLY with these markdown sections:
 
-Begin Executive Summary:"""
+### 1. Executive Summary
+Provide a cohesive, extremely accurate, and professional executive summary. State explicitly if the deal faces material contingencies based on the critical risks.
+
+### 2. Key Issues & Liabilities
+Elaborate on the specific risks flagged. What are the major red flags? How severe are they?
+
+### 3. AI Predictive Warning & Forecast
+What are the likely outcomes if these issues are not resolved? Will margin erosion occur? Will regulatory fines happen? Provide a structured prediction based on the data.
+
+### 4. Strategic Advice & Improvement Plan
+Provide actionable advice and remediation clauses that should be inserted into the SP&A. How can these risks be mitigated? What can be improved before Day 1 of integration?
+
+Begin Detailed Assessment:"""
 
     try:
         from app.config import settings

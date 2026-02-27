@@ -1,0 +1,20 @@
+DOCUMENT: Q3 Financial Summary (FY2023)
+COMPANY: Acme Corp
+PERIOD: July 1, 2023 - September 30, 2023
+
+REVENUE (Q3): 5,000,000 USD
+COGS (Q3): 2,900,000 USD
+GROSS PROFIT (Q3): 2,100,000 USD
+OPERATING EXPENSES (Q3): 1,850,000 USD
+EBITDA (Q3): 650,000 USD
+NET INCOME (Q3): 250,000 USD
+
+NOTE: Table on page 2 shows Operating Expenses as 1,650,000 USD (potential mismatch with summary page value of 1,850,000).
+CASH BURN: Increased 35% compared to Q2 due to expansion costs.
+ACCOUNTS RECEIVABLE: $1,200,000 (DSO: 72 days, up from 58 days in Q2)
+ACCOUNTS PAYABLE: $890,000
+WORKING CAPITAL: $310,000
+
+AUDITOR NOTES:
+- Revenue recognition timing needs review for 2 contracts
+- Inventory valuation method changed from FIFO to weighted average in Q3

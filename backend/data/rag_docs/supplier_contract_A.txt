@@ -1,0 +1,19 @@
+DOCUMENT: Supplier Contract A
+PARTIES: ORG_TARGET ("Acme Corp") and VENDOR_1 ("TechSupply Inc.")
+EFFECTIVE DATE: 2023-01-01
+TERM: 12 months, auto-renewal for successive 12-month periods unless either party provides written notice at least 90 days before renewal date.
+
+TERMINATION:
+- Termination for Convenience: VENDOR_1 may terminate for convenience with 30 days' notice.
+- Termination for Cause: Either party may terminate immediately for material breach not cured within 10 business days.
+
+LIABILITY:
+- Liability Cap: Total liability of VENDOR_1 shall not exceed fees paid in the last 3 months.
+- Consequential Damages: Excluded, except for confidentiality breaches.
+
+PAYMENT:
+- Net 30 from invoice date.
+- Late fees: 1.5% per month.
+
+CONFIDENTIALITY:
+- Mutual confidentiality obligations survive termination for 3 years.

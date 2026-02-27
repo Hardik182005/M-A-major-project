@@ -1,0 +1,28 @@
+DOCUMENT: Employment & Change of Control Provisions
+COMPANY: Acme Corp
+
+KEY PERSONNEL WITH CHANGE-OF-CONTROL CLAUSES:
+1. Alex Morgan (CEO) - 2x base salary + bonus acceleration upon CoC
+2. Sarah Mitchell (CFO) - 1.5x base salary + 12 months vesting acceleration
+3. James Chen (CTO) - 2x base salary + full vesting acceleration + 18 month non-compete waiver
+
+SEVERANCE AGREEMENTS:
+- All C-suite executives have "double trigger" CoC provisions
+- VP-level: Single trigger, 6 months severance
+- Director-level: At-will, standard 2-week notice
+
+RETENTION BONUSES:
+- $500,000 retention pool authorized for key technical staff
+- Retention period: 12 months post-closing
+
+NON-COMPETE PROVISIONS:
+- CEO: 24-month non-compete (US market)
+- CFO: 18-month non-compete (US market)
+- CTO: 18-month non-compete (global) - NOTE: May be unenforceable in California
+
+INTELLECTUAL PROPERTY ASSIGNMENTS:
+- All employees signed IP assignment agreements as of 2022-01-01
+- 3 contractors have NOT signed IP assignments (flagged for review)
+
+ANNUAL PAYROLL COST (C-SUITE): $2,400,000
+ESTIMATED CoC PAYOUT LIABILITY: $4,200,000

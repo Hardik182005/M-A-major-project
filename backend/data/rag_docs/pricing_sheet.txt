@@ -1,0 +1,35 @@
+DOCUMENT: Product Pricing Sheet
+COMPANY: Acme Corp
+EFFECTIVE: 2023-07-01
+
+PRODUCT LINES:
+1. AcmeCloud Pro
+   - Monthly: $299/user
+   - Annual: $2,990/user (17% discount)
+   - Enterprise: Custom pricing ($250-$275/user for 100+ seats)
+   - Margin: 78%
+
+2. AcmeData Analytics
+   - Monthly: $149/user
+   - Annual: $1,490/user
+   - Margin: 82%
+
+3. AcmeSecure Vault
+   - Monthly: $99/user
+   - Annual: $990/user
+   - Margin: 85%
+
+VOLUME DISCOUNTS:
+- 50-99 users: 10% discount
+- 100-499 users: 15% discount
+- 500+ users: 20% discount + dedicated support
+
+RECENT CHANGES:
+- AcmeCloud Pro increased 12% from $267/user (effective 2023-07)
+- Volume discount thresholds lowered from 100 to 50 users
+- Enterprise tier minimum reduced from 200 to 100 seats
+
+CUSTOMER CONCENTRATION:
+- Top customer: MegaCorp Industries (32% of ARR)
+- Top 5 customers: 58% of ARR
+- Customer concentration risk: HIGH

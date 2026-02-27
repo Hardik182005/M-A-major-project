@@ -1,0 +1,14 @@
+DOCUMENT: Vendor Master List 2023
+COMPANY: Acme Corp
+
+ACTIVE VENDORS:
+- TechSupply Inc. | TAX_ID: TAX_1 (EIN: 12-3456789) | COUNTRY: US | STATUS: Active | ANNUAL SPEND: $148,500
+- Logistics Partners | TAX_ID: TAX_2 (EIN: 98-7654321) | COUNTRY: US | STATUS: Active | ANNUAL SPEND: $540,000
+- Acme Shell Co | TAX_ID: (missing) | COUNTRY: US | STATUS: Active | ANNUAL SPEND: $22,000
+- CloudServe Ltd | TAX_ID: TAX_3 (VAT: GB123456789) | COUNTRY: UK | STATUS: Active | ANNUAL SPEND: $96,000
+- DataWorks Analytics | TAX_ID: TAX_4 (EIN: 55-1234567) | COUNTRY: US | STATUS: Inactive | ANNUAL SPEND: $0
+
+NOTES:
+- Acme Shell Co has missing tax identification. Flagged for review.
+- DataWorks Analytics contract expired Q2 2023, pending renewal decision.
+- Vendor onboarding compliance check pending for CloudServe Ltd (GDPR assessment).

@@ -22,6 +22,8 @@ export default function DocumentViewerPage() {
     const [loading, setLoading] = useState(true);
     const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
     const [activeTab, setActiveTab] = useState('AI Findings');
+    const [showAnnotatedText, setShowAnnotatedText] = useState(false);
+    const [reprocessing, setReprocessing] = useState(false);
 
     useEffect(() => {
         const fetchDocumentData = async () => {
@@ -60,7 +62,9 @@ export default function DocumentViewerPage() {
 
                     if (textRes.data) setDocumentText(textRes.data);
                     if (classRes.data) setClassification(classRes.data);
-                    if (piiRes.data?.entities) setPiiEntities(piiRes.data.entities);
+                    // PII comes either as array directly or { entities: [] }
+                    if (Array.isArray(piiRes.data)) setPiiEntities(piiRes.data);
+                    else if (piiRes.data?.entities) setPiiEntities(piiRes.data.entities);
                     if (findingsRes.data?.findings) setFindings(findingsRes.data.findings);
                     if (structRes.data) setStructuredData(structRes.data);
                     if (blobRes.data) {
@@ -87,6 +91,70 @@ export default function DocumentViewerPage() {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [docId]);
+
+    // Auto-show annotated text when text is available (for keyword highlighting)
+    useEffect(() => {
+        if (documentText?.text) {
+            setShowAnnotatedText(true);
+        }
+    }, [documentText, piiEntities, findings]);
+
+    // Risk keywords to auto-detect in document text
+    const RISK_KEYWORDS = {
+        FINANCIAL: ['discrepancy', 'overdue', 'write-off', 'adjusted EBITDA', 'cash burn', 'restructuring costs', 'settlement', 'liability', 'revenue decline', 'loss', 'negative', 'deficit', 'shortfall', 'impairment', 'depreciation', 'accounts receivable', 'unpaid', 'outstanding balance', 'penalty', 'overstatement', 'understatement'],
+        LEGAL: ['litigation', 'lawsuit', 'legal dispute', 'non-compete', 'indemnification', 'breach', 'violation', 'regulatory', 'compliance gap', 'intellectual property', 'patent infringement', 'arbitration', 'injunction', 'termination clause', 'force majeure'],
+        OPERATIONAL: ['customer concentration', 'single vendor', 'key person', 'employee turnover', 'data breach', 'service disruption', 'supply chain', 'scalability concern', 'technical debt', 'SaaS restructuring'],
+    };
+
+    // Highlight function that applies color-coded annotations
+    const highlightText = (text) => {
+        let htmlText = text;
+
+        // 1. Highlight AI Findings (red underline - most important)
+        findings.forEach(finding => {
+            const quote = finding.evidence_quote || finding.evidence;
+            if (quote && quote.length > 5) {
+                try {
+                    const escaped = quote.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const severityClass = finding.severity === 'CRITICAL' ? 'critical-highlight' :
+                        finding.severity === 'HIGH' ? 'high-highlight' :
+                            finding.severity === 'MEDIUM' ? 'medium-highlight' : 'low-highlight';
+                    htmlText = htmlText.replace(new RegExp(escaped, 'gi'),
+                        `<span class="pdf-highlight ${severityClass}" title="[${finding.severity}] ${finding.category}: ${finding.description}">$&</span>`);
+                } catch (e) { }
+            }
+        });
+
+        // 2. Highlight PII (yellow)
+        piiEntities.forEach(entity => {
+            const entText = entity.original_text || entity.text;
+            if (entText && entText.length > 1) {
+                try {
+                    const escaped = entText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    htmlText = htmlText.replace(new RegExp(escaped, 'gi'),
+                        `<span class="pdf-highlight pii-highlight" title="PII: ${entity.label} (${entText})">$&</span>`);
+                } catch (e) { }
+            }
+        });
+
+        // 3. Auto-detect risk keywords (only if no findings from AI)
+        if (findings.length === 0) {
+            Object.entries(RISK_KEYWORDS).forEach(([category, keywords]) => {
+                keywords.forEach(keyword => {
+                    try {
+                        const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp(`(${escaped})`, 'gi');
+                        const colorClass = category === 'FINANCIAL' ? 'financial-keyword' :
+                            category === 'LEGAL' ? 'legal-keyword' : 'operational-keyword';
+                        htmlText = htmlText.replace(regex,
+                            `<span class="pdf-highlight ${colorClass}" title="${category} Risk Indicator">$1</span>`);
+                    } catch (e) { }
+                });
+            });
+        }
+
+        return htmlText;
+    };
 
     // Group findings by severity
     const criticalFindings = findings.filter(f => f.severity === 'CRITICAL');
@@ -158,9 +226,39 @@ export default function DocumentViewerPage() {
                         </div>
                     </div>
 
+                    {/* Toggle button for annotated text view */}
+                    {documentText?.text && (
+                        <div className="annotated-toggle">
+                            <button
+                                className={`toggle-annotated-btn ${showAnnotatedText ? 'active' : ''}`}
+                                onClick={() => setShowAnnotatedText(!showAnnotatedText)}
+                            >
+                                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{showAnnotatedText ? 'picture_as_pdf' : 'text_snippet'}</span>
+                                {showAnnotatedText ? 'Show PDF' : 'Show Annotated Text'}
+                            </button>
+                            <div className="highlight-legend">
+                                {findings.length > 0 && <span className="legend-item"><span className="legend-dot" style={{ background: '#FEE2E2', border: '2px solid #EF4444' }}></span> AI Findings</span>}
+                                {piiEntities.length > 0 && <span className="legend-item"><span className="legend-dot" style={{ background: '#FEF9C3', border: '2px solid #EAB308' }}></span> PII Data</span>}
+                                {findings.length === 0 && <>
+                                    <span className="legend-item"><span className="legend-dot" style={{ background: '#FEE2E2', border: '2px solid #EF4444' }}></span> Financial</span>
+                                    <span className="legend-item"><span className="legend-dot" style={{ background: '#FFEDD5', border: '2px solid #F97316' }}></span> Legal</span>
+                                    <span className="legend-item"><span className="legend-dot" style={{ background: '#F3E8FF', border: '2px solid #A855F7' }}></span> Operational</span>
+                                </>}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="pdf-render-area">
-                        {/* Document Text Content */}
-                        {document.file_type === 'application/pdf' || document.file_type?.startsWith('image/') ? (
+                        {showAnnotatedText && documentText?.text ? (
+                            <div className="pdf-mock-page annotated-text-view">
+                                <div className="document-text">
+                                    {documentText.text.split('\n').map((paragraph, idx) => {
+                                        if (!paragraph.trim()) return <p key={idx}>&nbsp;</p>;
+                                        return <p key={idx} dangerouslySetInnerHTML={{ __html: highlightText(paragraph) }}></p>;
+                                    })}
+                                </div>
+                            </div>
+                        ) : (document.file_type === 'application/pdf' || document.file_type?.startsWith('image/')) ? (
                             pdfBlobUrl ? (
                                 <iframe
                                     src={pdfBlobUrl}
@@ -178,20 +276,16 @@ export default function DocumentViewerPage() {
                             <div className="pdf-mock-page">
                                 {documentText?.text ? (
                                     <div className="document-text">
-                                        {documentText.text.split('\n').map((paragraph, idx) => (
-                                            <p key={idx}>{paragraph}</p>
-                                        ))}
+                                        {documentText.text.split('\n').map((paragraph, idx) => {
+                                            if (!paragraph.trim()) return <p key={idx}>&nbsp;</p>;
+                                            return <p key={idx} dangerouslySetInnerHTML={{ __html: highlightText(paragraph) }}></p>;
+                                        })}
                                     </div>
                                 ) : (
                                     <div className="no-text-placeholder">
                                         <span className="material-symbols-outlined">description</span>
                                         <h3>{document.filename}</h3>
                                         <p>Document text extraction pending or not available.</p>
-                                        <div className="doc-meta">
-                                            <p><strong>File Size:</strong> {document.file_size ? `${Math.round(document.file_size / 1024)} KB` : 'N/A'}</p>
-                                            <p><strong>Checksum:</strong> {document.checksum || 'N/A'}</p>
-                                            <p><strong>Status:</strong> {document.status || 'Unknown'}</p>
-                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -309,7 +403,7 @@ export default function DocumentViewerPage() {
                                                     <span className="pii-label">{entity.label}</span>
                                                     <span className="pii-confidence">{Math.round((entity.confidence || 0) * 100)}% confidence</span>
                                                 </div>
-                                                <div className="pii-text">"{entity.text}"</div>
+                                                <div className="pii-text">"{entity.original_text || entity.text}"</div>
                                                 {entity.replacement && (
                                                     <div className="pii-replacement">Replacement: {entity.replacement}</div>
                                                 )}
@@ -410,8 +504,28 @@ export default function DocumentViewerPage() {
                                 ) : (
                                     <div className="tab-placeholder">
                                         <span className="material-symbols-outlined">check_circle</span>
-                                        <h3>No Findings</h3>
-                                        <p>No AI findings have been generated for this document yet. Processing may still be in progress.</p>
+                                        <h3>No Findings Yet</h3>
+                                        <p>AI risk analysis has not generated findings for this document. You can re-run the analysis pipeline.</p>
+                                        <button
+                                            className="reprocess-btn"
+                                            disabled={reprocessing}
+                                            onClick={async () => {
+                                                if (!document?.projectId) return;
+                                                setReprocessing(true);
+                                                try {
+                                                    await api.post(`/projects/${document.projectId}/documents/${docId}/process`, { doc_id: parseInt(docId), force: true });
+                                                    // Poll for completion
+                                                    setTimeout(() => window.location.reload(), 15000);
+                                                } catch (e) {
+                                                    console.error('Reprocess error:', e);
+                                                } finally {
+                                                    setReprocessing(false);
+                                                }
+                                            }}
+                                        >
+                                            <span className="material-symbols-outlined">{reprocessing ? 'sync' : 'play_arrow'}</span>
+                                            {reprocessing ? 'Running Analysis...' : 'Run AI Analysis'}
+                                        </button>
                                     </div>
                                 )}
                             </div>

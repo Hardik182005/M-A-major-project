@@ -63,6 +63,7 @@ export default function AppLayout({ children, selectedProject, onSelectProject }
         { to: "/reports", icon: "bar_chart", label: "Reports" },
         { to: "/audit", icon: "history", label: "Audit Trail" },
         { to: "/ai-assistant", icon: "smart_toy", label: "AI Assistant" },
+        { to: "/insights", icon: "newspaper", label: "M&A News" },
     ];
 
     return (

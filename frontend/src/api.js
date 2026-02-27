@@ -95,6 +95,9 @@ export const chatWithAI = (projectId, message, history = []) =>
 export const getAIAssistantStatus = () =>
     api.get('/ai-assistant/status');
 
+export const getAINews = () =>
+    api.get('/ai-assistant/news');
+
 // Reports
 export const getProjectReports = (projectId) =>
     api.get(`/reports/project/${projectId}`);

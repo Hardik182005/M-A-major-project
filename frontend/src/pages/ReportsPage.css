@@ -380,3 +380,39 @@
 .view-full-report-btn:hover {
     background: #FAFAFA;
 }
+
+/* Markdown specific styles */
+.opinion-text h1,
+.opinion-text h2,
+.opinion-text h3 {
+    margin: 16px 0 8px 0;
+    font-weight: 700;
+    color: #18181B;
+}
+
+.opinion-text h2 {
+    font-size: 18px;
+}
+
+.opinion-text h3 {
+    font-size: 14px;
+}
+
+.opinion-text ul,
+.opinion-text ol {
+    margin: 0 0 16px 0;
+    padding-left: 20px;
+}
+
+.opinion-text li {
+    margin-bottom: 6px;
+}
+
+.opinion-text p {
+    margin: 0 0 12px 0;
+    line-height: 1.6;
+}
+
+.opinion-text strong {
+    font-weight: 700;
+}

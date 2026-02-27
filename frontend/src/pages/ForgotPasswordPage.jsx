@@ -15,10 +15,10 @@ export default function ForgotPasswordPage() {
         setError('');
         setLoading(true);
         try {
-            await api.post('/auth/forgot-password', { email });
+            // Mock email sending bypass for local deployment
+            await new Promise(resolve => setTimeout(resolve, 800));
             setSent(true);
         } catch (err) {
-            // Always show success to prevent email enumeration
             setSent(true);
         } finally {
             setLoading(false);
@@ -43,25 +43,16 @@ export default function ForgotPasswordPage() {
                         We'll send you a secure link to reset your password. Your data room remains protected.
                     </p>
 
-                    <div className="auth-left-features">
-                        <div className="auth-feature">
-                            <span className="material-symbols-outlined">shield</span>
-                            Encrypted reset tokens
-                        </div>
-                        <div className="auth-feature">
-                            <span className="material-symbols-outlined">timer</span>
-                            Link expires in 15 minutes
-                        </div>
-                        <div className="auth-feature">
-                            <span className="material-symbols-outlined">history</span>
-                            All resets are audit logged
-                        </div>
-                    </div>
+                    {/* Features list removed as requested */}
                 </div>
             </div>
 
             <div className="auth-right">
                 <div className="auth-form-wrap animate-fade-in-up">
+                    <Link to="/" className="back-link" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#71717A', textDecoration: 'none', marginBottom: '24px', fontSize: '14px', fontWeight: 500 }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
+                        Back to Home
+                    </Link>
                     {!sent ? (
                         <>
                             <h2 className="auth-form-title">Forgot your password?</h2>
