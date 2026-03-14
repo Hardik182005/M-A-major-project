@@ -1,9 +1,10 @@
 """
 Ollama client for SLM (classification, PII detection) and LLM (analysis, findings generation).
+Supports both blocking and streaming responses for fast chat.
 """
 import json
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Generator
 import requests
 from app.config import settings
 
@@ -292,6 +293,59 @@ Answer:"""
             return f"Error: {result.get('error', 'Unknown error')}"
         
         return result.get("text", "")
+
+    def stream_generate(
+        self,
+        prompt: str,
+        model: str = None,
+        system: str = None,
+    ) -> Generator[str, None, None]:
+        """
+        Stream tokens from Ollama in real-time.
+        
+        Yields individual text chunks as they are generated,
+        enabling Server-Sent Events (SSE) for instant UI feedback.
+        """
+        if model is None:
+            model = settings.OLLAMA_ANALYSIS_MODEL
+
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": True,
+        }
+        if system:
+            payload["messages"].insert(0, {"role": "system", "content": system})
+
+        try:
+            response = self.session.post(
+                f"{self.base_url}/api/chat",
+                json=payload,
+                timeout=self.timeout,
+                stream=True,
+            )
+            response.raise_for_status()
+
+            for line in response.iter_lines(decode_unicode=True):
+                if not line:
+                    continue
+                try:
+                    chunk = json.loads(line)
+                    token = chunk.get("message", {}).get("content", "")
+                    if token:
+                        yield token
+                    # Stop when Ollama says done
+                    if chunk.get("done", False):
+                        break
+                except json.JSONDecodeError:
+                    continue
+
+        except requests.exceptions.Timeout:
+            logger.error(f"Ollama stream timed out after {self.timeout}s")
+            yield "\n\n⚠️ The AI model timed out. Please try a shorter question."
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Ollama stream failed: {e}")
+            yield "\n\n⚠️ Failed to connect to the AI model. Is Ollama running?"
 
 
 # Singleton instance

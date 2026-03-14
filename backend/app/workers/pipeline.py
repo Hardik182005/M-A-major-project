@@ -565,6 +565,26 @@ class PipelineWorker:
             
             self.db.commit()
             
+            # ── Also index into ChromaDB for semantic vector search ──
+            try:
+                from app.services.vector_store import index_chunks as vector_index, is_available as chroma_ok
+                if chroma_ok():
+                    # Gather text chunks and page numbers for vector store
+                    all_chunk_texts = []
+                    all_chunk_pages = []
+                    for page_num, page_text in enumerate(pages, start=1):
+                        for para in page_text.split("\n\n"):
+                            para = para.strip()
+                            if len(para) >= 50:
+                                all_chunk_texts.append(para)
+                                all_chunk_pages.append(page_num)
+                    
+                    if all_chunk_texts:
+                        vector_index(doc.id, doc.filename, all_chunk_texts, all_chunk_pages)
+                        logger.info(f"ChromaDB: indexed {len(all_chunk_texts)} vectors for doc {doc.id}")
+            except Exception as ve:
+                logger.warning(f"ChromaDB indexing skipped: {ve}")
+            
             logger.info(f"Indexing complete: {chunk_index} chunks created")
             return True
             

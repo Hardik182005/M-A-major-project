@@ -92,6 +92,85 @@ export const downloadDocumentBlob = (docId) =>
 export const chatWithAI = (projectId, message, history = []) =>
     api.post('/ai-assistant/chat', { project_id: projectId, message, history });
 
+/**
+ * Stream chat response via Server-Sent Events (SSE).
+ * Calls onToken(text) for each word as it arrives from Ollama.
+ * Calls onSources(sources) when source metadata arrives.
+ * Calls onDone() when generation is complete.
+ * Returns an abort function to cancel the stream.
+ */
+export const streamChatWithAI = (projectId, message, history = [], { onToken, onSources, onDone, onError }) => {
+    const token = localStorage.getItem('access_token');
+    const controller = new AbortController();
+
+    fetch(`${API_BASE}/ai-assistant/chat/stream`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ project_id: projectId, message, history }),
+        signal: controller.signal,
+    })
+    .then(async (response) => {
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.detail || `HTTP ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                const jsonStr = line.slice(6).trim();
+                if (!jsonStr) continue;
+
+                try {
+                    const event = JSON.parse(jsonStr);
+                    if (event.type === 'token' && onToken) {
+                        onToken(event.token);
+                    } else if (event.type === 'sources' && onSources) {
+                        onSources(event.sources);
+                    } else if (event.type === 'done' && onDone) {
+                        onDone();
+                    }
+                } catch (e) {
+                    // Skip malformed JSON
+                }
+            }
+        }
+
+        // Process remaining buffer
+        if (buffer.startsWith('data: ')) {
+            try {
+                const event = JSON.parse(buffer.slice(6).trim());
+                if (event.type === 'done' && onDone) onDone();
+            } catch (e) {}
+        }
+
+        if (onDone) onDone();
+    })
+    .catch((err) => {
+        if (err.name !== 'AbortError') {
+            console.error('Stream error:', err);
+            if (onError) onError(err);
+        }
+    });
+
+    // Return abort function
+    return () => controller.abort();
+};
+
 export const getAIAssistantStatus = () =>
     api.get('/ai-assistant/status');
 

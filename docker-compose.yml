@@ -1,0 +1,66 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL Database ──
+  postgres:
+    image: postgres:15
+    container_name: dataroom-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: dataroom
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # ── FastAPI Backend ──
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dataroom-backend
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+    environment:
+      # Use the internal Docker network to reach PostgreSQL
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/dataroom
+      # host.docker.internal allows Docker to talk to Ollama running on your Windows machine
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    volumes:
+      # 🛡️ These volumes guarantee you never lose your data!
+      # Maps your PDF files to a persistent volume
+      - backend_storage:/app/storage
+      # Maps your ChromaDB vector data and SQLite DB to a persistent volume
+      - backend_data:/app/data
+
+  # ── React/Vite Frontend ──
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dataroom-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    environment:
+      # Direct Vite API calls straight to the exposed backend port
+      - VITE_API_BASE=http://localhost:8000
+    volumes:
+      # Optional: Maps your local code into the container so you can edit React live without rebuilding
+      - ./frontend/src:/app/src
+
+# ── Persistent Storage Volumes ──
+volumes:
+  # Postgres schemas & tables
+  postgres_data:
+  # Uploaded PDFs and extracted text
+  backend_storage:
+  # ChromaDB vectors and SQLite database
+  backend_data:

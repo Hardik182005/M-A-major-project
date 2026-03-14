@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
-import { chatWithAI, getAIAssistantStatus, uploadDocument, getAINews } from '../api';
+import { chatWithAI, streamChatWithAI, getAIAssistantStatus, uploadDocument, getAINews } from '../api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import './AIAssistantPage.css';
@@ -12,10 +12,17 @@ const NEWS_REFRESH_MS = 3600000; // 1 hour in milliseconds
 function SafeMarkdown({ children }) {
     try {
         let content = children || '';
-        // Strip wrapping code fences that AI sometimes adds around tables
-        content = content.replace(/^```(?:markdown|md|text)?\n([\s\S]*?)```$/gm, '$1');
+        // Strip wrapping code fences that AI sometimes adds around tables/markdown
+        // Handle complete code fences: ```markdown ... ```
+        content = content.replace(/^```(?:markdown|md|text|json)?\s*\n?([\s\S]*?)```\s*$/gm, '$1');
+        // Handle opening code fence at start with no closing (streaming partial)
+        content = content.replace(/^```(?:markdown|md|text|json)?\s*\n/gm, '');
+        // Handle orphan closing fence
+        content = content.replace(/\n?```\s*$/gm, '');
         // Replace problematic characters
         content = content.replace(/█/g, '▓').replace(/░/g, '░');
+        // Strip *** and --- horizontal rule dividers the model adds (anywhere in text)
+        content = content.replace(/\*{3,}/g, '').replace(/-{4,}/g, ''); // Keep --- for headers, strip 4+ dashes
         return (
             <ReactMarkdown remarkPlugins={[remarkGfm]} className="markdown-body">
                 {content}
@@ -59,13 +66,27 @@ export default function AIAssistantPage() {
     const [newsLastUpdated, setNewsLastUpdated] = useState(null);
     const fileInputRef = useRef(null);
     const chatEndRef = useRef(null);
+    const chatContainerRef = useRef(null);
+    const streamAbortRef = useRef(null);
     const [uploadingFile, setUploadingFile] = useState(false);
     const [sidebarTab, setSidebarTab] = useState('news');
+    const [isScrolledUp, setIsScrolledUp] = useState(false);
 
-    // Scroll to bottom on new message
+    // Track manual scrolling
+    const handleScroll = () => {
+        if (chatContainerRef.current) {
+            const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+            // If we are more than 150px from the bottom, consider it "scrolled up"
+            setIsScrolledUp(scrollHeight - scrollTop - clientHeight > 150);
+        }
+    };
+
+    // Scroll to bottom on new message or tokens, unless user scrolled up
     useEffect(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [chatSessions, loading]);
+        if (!isScrolledUp) {
+            chatEndRef.current?.scrollIntoView({ behavior: 'auto' });
+        }
+    }, [chatSessions, loading, isScrolledUp]);
 
     // Check AI status on mount
     useEffect(() => {
@@ -143,10 +164,12 @@ export default function AIAssistantPage() {
         if (!input.trim() || loading || !selectedProject || !activeSessionId) return;
 
         const userMessage = input.trim();
+        const sessionId = activeSessionId;
         setInput('');
 
+        // Add user message
         setChatSessions(prev => prev.map(s => {
-            if (s.id === activeSessionId) {
+            if (s.id === sessionId) {
                 const isFirstMsg = s.messages.length === 0;
                 return {
                     ...s,
@@ -159,39 +182,71 @@ export default function AIAssistantPage() {
 
         setLoading(true);
 
-        try {
-            // Send last 5 messages as history for context
-            const currentSession = chatSessions.find(s => s.id === activeSessionId);
-            const history = currentSession ? currentSession.messages.slice(-5) : [];
+        // Prepare history (last 5 messages)
+        const currentSession = chatSessions.find(s => s.id === sessionId);
+        const history = currentSession ? currentSession.messages.slice(-5) : [];
 
-            // Create abort controller with 45 second timeout
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 45000);
+        // Add a placeholder assistant message that we'll stream into
+        setChatSessions(prev => prev.map(s => s.id === sessionId ? {
+            ...s,
+            messages: [...s.messages, { role: 'assistant', content: '' }]
+        } : s));
 
-            const res = await chatWithAI(selectedProject.id, userMessage, history);
-            clearTimeout(timeout);
+        // Track accumulated text in a ref-like variable
+        let accumulated = '';
 
-            const aiResponse = res.data.answer;
-
-            setChatSessions(prev => prev.map(s => s.id === activeSessionId ? {
-                ...s,
-                messages: [...s.messages, { role: 'assistant', content: aiResponse }]
-            } : s));
-        } catch (err) {
-            console.error('Chat error:', err);
-            let errorMsg;
-            if (err.code === 'ERR_CANCELED' || err.message?.includes('abort')) {
-                errorMsg = "⏱️ The AI took too long to respond. This can happen with complex queries. Try a simpler question, or check if Ollama is running.";
-            } else {
-                errorMsg = err.response?.data?.detail || '⚠️ Sorry, I encountered an error. Please try again.';
-            }
-            setChatSessions(prev => prev.map(s => s.id === activeSessionId ? {
-                ...s,
-                messages: [...s.messages, { role: 'assistant', content: errorMsg }]
-            } : s));
+        // Abort previous stream if any
+        if (streamAbortRef.current) {
+            streamAbortRef.current();
         }
 
-        setLoading(false);
+        streamAbortRef.current = streamChatWithAI(
+            selectedProject.id,
+            userMessage,
+            history,
+            {
+                onToken: (token) => {
+                    accumulated += token;
+                    const text = accumulated;
+                    setChatSessions(prev => prev.map(s => {
+                        if (s.id !== sessionId) return s;
+                        const msgs = [...s.messages];
+                        // Update the last assistant message
+                        if (msgs.length > 0 && msgs[msgs.length - 1].role === 'assistant') {
+                            msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: text };
+                        }
+                        return { ...s, messages: msgs };
+                    }));
+                },
+                onSources: (sources) => {
+                    // Sources metadata received (could display in UI later)
+                    console.log('Chat sources:', sources);
+                },
+                onDone: () => {
+                    setLoading(false);
+                    streamAbortRef.current = null;
+                },
+                onError: (err) => {
+                    console.error('Stream error:', err);
+                    const errorMsg = err.message || '⚠️ Sorry, I encountered an error. Please try again.';
+                    // If we got no tokens, replace with error; otherwise append
+                    setChatSessions(prev => prev.map(s => {
+                        if (s.id !== sessionId) return s;
+                        const msgs = [...s.messages];
+                        if (msgs.length > 0 && msgs[msgs.length - 1].role === 'assistant') {
+                            const existing = msgs[msgs.length - 1].content;
+                            msgs[msgs.length - 1] = {
+                                ...msgs[msgs.length - 1],
+                                content: existing || errorMsg
+                            };
+                        }
+                        return { ...s, messages: msgs };
+                    }));
+                    setLoading(false);
+                    streamAbortRef.current = null;
+                }
+            }
+        );
     };
 
     const handleFileUpload = async (e) => {
@@ -278,7 +333,11 @@ export default function AIAssistantPage() {
                 <div className="ai-layout">
                     {/* Main Chat Area */}
                     <div className="ai-chat-area">
-                        <div className="chat-history">
+                        <div 
+                            className="chat-history" 
+                            ref={chatContainerRef} 
+                            onScroll={handleScroll}
+                        >
                             {messages.length === 0 && (
                                 <div className="empty-chat">
                                     <span className="material-symbols-outlined empty-icon" style={{ fontSize: '48px', color: '#60A5FA', marginBottom: '16px' }}>smart_toy</span>
